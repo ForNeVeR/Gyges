@@ -6,6 +6,8 @@
   <ItemGroup>
     <Compile Include="CamanisGame.fs" />
     <Compile Include="Program.fs" />
+    <None Include="aircraft.png" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="cursor.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL.Core" Version="3.7.0.1" />
