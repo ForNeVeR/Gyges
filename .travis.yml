@@ -1,0 +1,17 @@
+language: csharp
+os:
+    - linux
+dist: trusty
+env:
+    global:
+        - DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+        - DOTNET_CLI_TELEMETRY_OPTOUT=1
+
+# Build only pull-requests and not the standalone branches:
+branches:
+  only:
+    - master
+
+dotnet: 2.0.0
+script:
+    - dotnet build
