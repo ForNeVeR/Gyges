@@ -3,7 +3,7 @@
 Gyges (named after [one of the planets][gyges] in the [Tyrian][tyrian]
 universe) will be a "Shoot 'em up" space shooter.
 
-Will submitted to the [8-bit SITC Game Jam][sitc-game-jam].
+Will be submitted to the [8-bit SITC Game Jam][sitc-game-jam].
 
 ## Build
 
