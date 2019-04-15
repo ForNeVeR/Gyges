@@ -7,7 +7,7 @@ Will submitted to the [8-bit SITC Game Jam][sitc-game-jam].
 
 ## Build
 
-[.NET Core 2.2 SDK](netcore-sdk) is required to build the project.
+[.NET Core 2.2 SDK][netcore-sdk] is required to build the project.
 
 ```
 $ dotnet build
