@@ -15,6 +15,7 @@
     <None Include="Content.mgcb" />
     <None Include="Connection.ttf" />
     <None Include="Connection.spritefont" />
+    <None Include="ship.png" />
     <MonoGameContentReference Include="**\*.mgcb" />
   </ItemGroup>
 
