@@ -24,6 +24,7 @@ type GameLoop<'Model, 'Content>( config: Config,
     inherit Game()
 
     let mutable renderTarget: RenderTarget2D = null
+    let mutable onScreenRect: Rectangle = Unchecked.defaultof<Rectangle>
     let mutable spriteBatch: SpriteBatch = null
     
     let mutable model = Unchecked.defaultof<'Model>
@@ -46,8 +47,19 @@ type GameLoop<'Model, 'Content>( config: Config,
               color = Color.White )
 
     override this.Initialize() =
-        renderTarget <- new RenderTarget2D(this.GraphicsDevice, config.Width, config.Height)
+        let gd = this.GraphicsDevice
+        
+        renderTarget <- new RenderTarget2D(gd, config.Width, config.Height)
+        let screenWidth = gd.PresentationParameters.BackBufferWidth;
+        let screenHeight = gd.PresentationParameters.BackBufferHeight;
+        let scale = min (screenWidth/config.Width) (screenHeight/config.Height)
+        let width = scale * config.Width
+        let height = scale * config.Height
+        onScreenRect <- Rectangle(screenWidth/2 - width/2, screenHeight/2 - height/2,
+                                  width, height)
+        
         spriteBatch <- new SpriteBatch(this.GraphicsDevice)
+                
         model <- init()
         base.Initialize()
 
@@ -68,25 +80,9 @@ type GameLoop<'Model, 'Content>( config: Config,
         gd.SetRenderTarget(renderTarget)
         draw spriteBatch content model
         
-        let screenWidth = gd.PresentationParameters.BackBufferWidth;
-        let screenHeight = gd.PresentationParameters.BackBufferHeight;
-        
-        let aspect = config.Width/config.Height
-        
-        let rect =
-            if screenWidth > screenHeight
-            then
-                let actualWidth = aspect*screenHeight
-                let topLeft = (screenWidth - actualWidth) / 2
-                new Rectangle(topLeft, 0, actualWidth, screenHeight)
-            else
-                let actualHeight = screenWidth/aspect
-                let topLeft = (screenHeight - actualHeight) / 2
-                new Rectangle(0, topLeft, screenWidth, actualHeight)
-        
         gd.SetRenderTarget(null)
         spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp)
-        spriteBatch.Draw(renderTarget, rect, Color.White)
+        spriteBatch.Draw(renderTarget, onScreenRect, Color.White)
         updateAndPrintFPS gameTime spriteBatch
         spriteBatch.End()
         base.Draw(gameTime)
