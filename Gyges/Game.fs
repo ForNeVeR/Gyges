@@ -3,24 +3,26 @@ namespace Gyges
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Content
 open Microsoft.Xna.Framework.Graphics;
-open Microsoft.Xna.Framework.Input
 
-type InputState =
-    {
-        Keyboard: KeyboardState
-    }
+type DeltaTime = DeltaTime of float32
     
 type Config =
     {
         Width: int
         Height: int
     }
+    
+type Game<'Model, 'Content, 'Input> =
+    {
+        Config: Config
+        LoadContent: ContentManager -> 'Content
+        Init: unit -> 'Model
+        HandleInput: unit -> 'Input
+        Update: 'Input -> DeltaTime -> 'Model -> 'Model
+        Draw: SpriteBatch -> 'Content -> 'Model -> unit
+    }
 
-type GameLoop<'Model, 'Content>( config: Config,
-                                 loadContent: ContentManager -> 'Content,
-                                 init: unit -> 'Model,
-                                 update: InputState -> 'Model -> 'Model,
-                                 draw: SpriteBatch -> 'Content -> 'Model -> unit ) =
+type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
     inherit Game()
 
     let mutable renderTarget: RenderTarget2D = null
@@ -29,6 +31,7 @@ type GameLoop<'Model, 'Content>( config: Config,
     
     let mutable model = Unchecked.defaultof<'Model>
     let mutable content = Unchecked.defaultof<'Content>
+    let mutable input = Unchecked.defaultof<'Input>
     
     let mutable fpsFont: SpriteFont = null
     let mutable fps = 0
@@ -48,6 +51,7 @@ type GameLoop<'Model, 'Content>( config: Config,
 
     override this.Initialize() =
         let gd = this.GraphicsDevice
+        let config = game.Config
         
         renderTarget <- new RenderTarget2D(gd, config.Width, config.Height)
         let screenWidth = gd.PresentationParameters.BackBufferWidth;
@@ -60,17 +64,19 @@ type GameLoop<'Model, 'Content>( config: Config,
         
         spriteBatch <- new SpriteBatch(this.GraphicsDevice)
                 
-        model <- init()
+        model <- game.Init()
         base.Initialize()
 
     override this.LoadContent() =
         fpsFont <- this.Content.Load<SpriteFont> "./connection"
-        content <- loadContent (this.Content)
+        content <- game.LoadContent (this.Content)
         base.LoadContent()
 
     override __.Update(gameTime) =
-        let input: InputState = { Keyboard = Keyboard.GetState() }
-        model <- update input model
+        let delta = DeltaTime (gameTime.ElapsedGameTime.TotalSeconds |> float32)
+        
+        input <- game.HandleInput()
+        model <- game.Update input delta model
         base.Update(gameTime)
 
     override this.Draw(gameTime) =
@@ -78,7 +84,7 @@ type GameLoop<'Model, 'Content>( config: Config,
         gd.Clear Color.Black
         
         gd.SetRenderTarget(renderTarget)
-        draw spriteBatch content model
+        game.Draw spriteBatch content model
         
         gd.SetRenderTarget(null)
         spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp)
@@ -86,3 +92,4 @@ type GameLoop<'Model, 'Content>( config: Config,
         updateAndPrintFPS gameTime spriteBatch
         spriteBatch.End()
         base.Draw(gameTime)
+        
