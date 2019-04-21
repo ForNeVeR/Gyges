@@ -9,6 +9,6 @@ type Content =
 
 module Content =    
     let load (contentManager: ContentManager): Content =
-        { Ship = contentManager.Load("ship")
+        { Ship   = contentManager.Load("ship")
           Bullet = contentManager.Load("bullet") }
 

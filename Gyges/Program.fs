@@ -3,104 +3,75 @@
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Graphics
 
-type Player =
-    {
-        Pos: Vector2
-        FireRate: float32
-        LastFire: float32
-        Speed: float32
-    }
-    
-type Bullet =
-    {
-        Pos: Vector2
-        Lifetime: float32
-        Speed: float32
-    }
-
 type Model =
-    {
-        Player: Player
-        Bullets: Bullet list
-    }
+    { Player: Player
+      Bullets: Bullet list }
 
-let init(): Model =
-    let player: Player =
-        { Pos = Vector2(50.0f, 50.0f)
-          FireRate = 0.1f
-          LastFire = 0.0f
-          Speed = 100.0f }
-    
-    { Player = player
+let init(): Model =     
+    { Player = Player.init()
       Bullets = List.empty }
     
-let update (input: Input) (time: Time) (model: Model): Model =
-    let dt = time.Delta
-    
+let update (input: Input) (time: Time) (model: Model): Model = 
     let keyToDir = function
         | Up    -> -Vector2.UnitY
         | Left  -> -Vector2.UnitX
         | Down  ->  Vector2.UnitY
         | Right ->  Vector2.UnitX
         | _ -> Vector2.Zero
-
-    let norm (vec: Vector2) =
-        if vec <> Vector2.Zero then vec.Normalize()
-        vec
     
-    let moveWith (speed: float32) (dir: Vector2) =
-        (norm dir) * speed
-            
-    let shift =
-        input.Pressed
-        |> List.map keyToDir
-        |> List.sum
-        |> moveWith model.Player.Speed
+    let dir =
+        input.Pressed |> List.sumBy keyToDir
     
-    let player = { model.Player
-                   with Pos = model.Player.Pos + shift*dt
-                        LastFire =
-                            if input.Pressed |> List.contains Fire &&
-                               time.Total - model.Player.LastFire > model.Player.FireRate
-                            then time.Total
-                            else model.Player.LastFire}
+    let isFireAllowed = 
+        input.Pressed |> List.contains Fire &&
+        time.Total - model.Player.LastFireTime > model.Player.FireRate
+    
+    let player =
+        model.Player
+        |> Player.update
+               [ yield Player.Move dir
+                 if isFireAllowed then
+                     yield Player.Fire ]
+               time
     
     let bullets =
         model.Bullets
-        |> List.map (fun x ->
-            { x with Pos = x.Pos - Vector2.UnitY * x.Speed * dt
-                     Lifetime = x.Lifetime + dt })
-        |> List.filter (fun x -> x.Lifetime < 10.0f)
+        |> List.map (Bullet.update time)
+        |> List.filter (fun x -> x.Pos.Y > 0.0f)
         
-    let bullets =
-        [
-            yield! bullets
-            if input.Pressed |> List.contains Fire &&
-               time.Total - model.Player.LastFire > model.Player.FireRate
-            then yield { Pos = model.Player.Pos + Vector2(0.0f, -10.0f)
-                         Lifetime = 0.0f
-                         Speed = 200.0f }
-        ]
-       
+    let newBullet =
+        if isFireAllowed then
+            [ Bullet.init (model.Player.Pos + Vector2(0.0f, -10.0f)) ]
+        else
+            [  ]
+      
     { model with Player = player
-                 Bullets = bullets }
+                 Bullets = newBullet @ bullets }
 
 let draw (spriteBatch: SpriteBatch) (content: Content) (model: Model) =
+    
+    let drawTexture (texture: Texture2D) (pos: Vector2) =
+        let width, height =
+            texture.Width |> float32, texture.Height |> float32
+            
+        spriteBatch.Draw(texture, pos - Vector2(width, height)/2.0f, Color.White)
+    
     spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp)
     spriteBatch.GraphicsDevice.Clear(Color.DarkBlue)
    
     for bullet in model.Bullets do
-        spriteBatch.Draw(content.Bullet, bullet.Pos - Vector2(15.0f, 11.0f)/2.0f, Color.White)
-    
-    spriteBatch.Draw(content.Ship, model.Player.Pos - Vector2(25.0f, 29.0f)/2.0f, Color.White)
+        drawTexture content.Bullet bullet.Pos
+        
+    drawTexture content.Ship model.Player.Pos
      
     spriteBatch.End()
 
 [<EntryPoint>]
-let main argv =
-    
+let main argv =    
     let game =
-        { Config = { Width = 256; Height = 192 }
+        { Config =
+            { Width = 256
+              Height = 192 }            
           LoadContent = Content.load
           Init = init
           HandleInput = Input.handle
