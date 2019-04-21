@@ -2,12 +2,12 @@
 
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Graphics
-open FSharpx.Collections
 
 type Player =
     {
         Pos: Vector2
-        FireRate: int
+        FireRate: float32
+        LastFire: float32
         Speed: float32
     }
     
@@ -21,19 +21,22 @@ type Bullet =
 type Model =
     {
         Player: Player
-        Bullets: PersistentHashMap<int, Bullet>
+        Bullets: Bullet list
     }
 
 let init(): Model =
     let player: Player =
         { Pos = Vector2(50.0f, 50.0f)
-          FireRate = 10
+          FireRate = 0.1f
+          LastFire = 0.0f
           Speed = 100.0f }
     
     { Player = player
-      Bullets = PersistentHashMap.empty }
+      Bullets = List.empty }
     
-let update (input: Input) (DeltaTime dt) (model: Model): Model =
+let update (input: Input) (time: Time) (model: Model): Model =
+    let dt = time.Delta
+    
     let keyToDir = function
         | Up    -> -Vector2.UnitY
         | Left  -> -Vector2.UnitX
@@ -41,24 +44,56 @@ let update (input: Input) (DeltaTime dt) (model: Model): Model =
         | Right ->  Vector2.UnitX
         | _ -> Vector2.Zero
 
-    let norm (vec: Vector2) = vec.Normalize(); vec
+    let norm (vec: Vector2) =
+        if vec <> Vector2.Zero then vec.Normalize()
+        vec
     
     let moveWith (speed: float32) (dir: Vector2) =
         (norm dir) * speed
             
     let shift =
         input.Pressed
-        |> List.map (keyToDir >> moveWith model.Player.Speed)
+        |> List.map keyToDir
         |> List.sum
+        |> moveWith model.Player.Speed
     
-    let player = { model.Player with Pos = model.Player.Pos + shift*dt }
+    let player = { model.Player
+                   with Pos = model.Player.Pos + shift*dt
+                        LastFire =
+                            if input.Pressed |> List.contains Fire &&
+                               time.Total - model.Player.LastFire > model.Player.FireRate
+                            then time.Total
+                            else model.Player.LastFire}
     
-    { model with Player = player }
+    let bullets =
+        model.Bullets
+        |> List.map (fun x ->
+            { x with Pos = x.Pos - Vector2.UnitY * x.Speed * dt
+                     Lifetime = x.Lifetime + dt })
+        |> List.filter (fun x -> x.Lifetime < 10.0f)
+        
+    let bullets =
+        [
+            yield! bullets
+            if input.Pressed |> List.contains Fire &&
+               time.Total - model.Player.LastFire > model.Player.FireRate
+            then yield { Pos = model.Player.Pos + Vector2(0.0f, -10.0f)
+                         Lifetime = 0.0f
+                         Speed = 200.0f }
+        ]
+       
+    { model with Player = player
+                 Bullets = bullets }
 
 let draw (spriteBatch: SpriteBatch) (content: Content) (model: Model) =
     spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp)
-    spriteBatch.GraphicsDevice.Clear(Color.Red)
-    spriteBatch.Draw(content.Ship, model.Player.Pos, Color.White)
+    spriteBatch.GraphicsDevice.Clear(Color.DarkBlue)
+   
+    for bullet in model.Bullets do
+        spriteBatch.Draw(content.Bullet, bullet.Pos - Vector2(15.0f, 11.0f)/2.0f, Color.White)
+    
+    spriteBatch.Draw(content.Ship, model.Player.Pos - Vector2(25.0f, 29.0f)/2.0f, Color.White)
+     
     spriteBatch.End()
 
 [<EntryPoint>]

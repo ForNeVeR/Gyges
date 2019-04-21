@@ -4,7 +4,11 @@ open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Content
 open Microsoft.Xna.Framework.Graphics;
 
-type DeltaTime = DeltaTime of float32
+type Time =
+    {
+        Total: float32
+        Delta: float32
+    }
     
 type Config =
     {
@@ -18,7 +22,7 @@ type Game<'Model, 'Content, 'Input> =
         LoadContent: ContentManager -> 'Content
         Init: unit -> 'Model
         HandleInput: unit -> 'Input
-        Update: 'Input -> DeltaTime -> 'Model -> 'Model
+        Update: 'Input -> Time -> 'Model -> 'Model
         Draw: SpriteBatch -> 'Content -> 'Model -> unit
     }
 
@@ -73,10 +77,14 @@ type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
         base.LoadContent()
 
     override __.Update(gameTime) =
-        let delta = DeltaTime (gameTime.ElapsedGameTime.TotalSeconds |> float32)
+        let time =
+            {
+                Total = gameTime.TotalGameTime.TotalSeconds |> float32
+                Delta = gameTime.ElapsedGameTime.TotalSeconds |> float32
+            }
         
         input <- game.HandleInput()
-        model <- game.Update input delta model
+        model <- game.Update input time model
         base.Update(gameTime)
 
     override this.Draw(gameTime) =
