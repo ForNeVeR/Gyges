@@ -8,7 +8,6 @@ module Map =
         
     let filterValues (predicate: 'a -> bool) (table: Map<_, 'a>): Map<_, 'a> =
         Map.filter (fun _ v -> predicate v) table
-        
-module GuidMap =
-    let add (value: 'a) (table: Map<Guid, 'a>): Map<Guid, 'a> =
+
+    let addWithGuid (value: 'a) (table: Map<Guid, 'a>): Map<Guid, 'a> =
         Map.add (Guid.NewGuid()) value table

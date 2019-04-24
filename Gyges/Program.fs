@@ -1,9 +1,9 @@
 ﻿open Gyges
 open Gyges.Utils
+open Gyges.Math
 
 open System
 open Microsoft.Xna.Framework
-open Microsoft.Xna.Framework.Graphics
 
 type Model =
     { Player: Player
@@ -23,7 +23,9 @@ let handleMove (input: Input) (time: Time) (model: Model): Model =
         | _ -> Vector2.Zero
         
     let dir =
-        input.Pressed |> List.sumBy keyToDir
+        input.Pressed
+        |> List.sumBy keyToDir
+        |> norm
         
     { model with Player = model.Player |> Player.move dir time }
 
@@ -36,16 +38,18 @@ let handleFire (input: Input) (time: Time) (model: Model): Model =
     if isFireAllowed then
         let bullets =
             model.Bullets
-            |> GuidMap.add (Bullet.init (player.Pos + Vector2(0.0f, -10.0f)))
+            |> Map.addWithGuid (Bullet.init (player.Pos + Vector2(0.0f, -10.0f)))
             
-        { model with Player = player |> Player.fire time
-                     Bullets = bullets }
+        { model with
+            Player = player |> Player.fire time
+            Bullets = bullets }
         
     else
         model
 
-let processBullets (time: Time) (model: Model): Model =
-    { model with Bullets = model.Bullets |> Map.mapValues (Bullet.update time) }
+let updateBullets (time: Time) (model: Model): Model =
+    { model with
+        Bullets = model.Bullets |> Map.mapValues (Bullet.update time) }
 
 let clearBullets (model: Model): Model =
     let filtered =
@@ -58,7 +62,7 @@ let update (input: Input) (time: Time) (model: Model): Model =
     model
     |> handleMove input time
     |> handleFire input time
-    |> processBullets time
+    |> updateBullets time
     |> clearBullets
 
 let draw (canvas: Canvas) (content: Content) (model: Model) =
@@ -81,8 +85,7 @@ let main argv =
         }
     
     let game =
-        { Config = config
-          LoadContent = Content.load
+        { LoadContent = Content.load
           Init = init
           HandleInput = Input.handle
           Update = update
@@ -90,7 +93,7 @@ let main argv =
         }
     
     game
-    |> GameLoop.make
+    |> GameLoop.makeWithConfig config
     |> GameLoop.run
 
     0

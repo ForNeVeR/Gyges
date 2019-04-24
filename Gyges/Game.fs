@@ -22,15 +22,14 @@ type Canvas =
       Clear: Color -> unit }
     
 type Game<'Model, 'Content, 'Input> =
-    { Config: Config
-      LoadContent: ContentManager -> 'Content
+    { LoadContent: ContentManager -> 'Content
       Init: unit -> 'Model
       HandleInput: unit -> 'Input
       Update: 'Input -> Time -> 'Model -> 'Model
       Draw: Canvas -> 'Content -> 'Model -> unit
     }
     
-type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
+type GameLoop<'Model, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
     inherit Game()
 
     let mutable renderTarget: RenderTarget2D = null
@@ -69,7 +68,6 @@ type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
 
     override this.Initialize() =
         let gd = this.GraphicsDevice
-        let config = game.Config
         
         renderTarget <- new RenderTarget2D(gd, config.GameWidth, config.GameHeight)
         let screenWidth = gd.PresentationParameters.BackBufferWidth;
@@ -120,13 +118,12 @@ type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
         base.Draw(gameTime)
 
 module GameLoop =
-    let make (game: Game<'Model, 'Content, 'Input>) =
-        let config = game.Config
-        let loop = new GameLoop<'Model, 'Content, 'Input>(game)
+    let makeWithConfig (config: Config) (game: Game<'Model, 'Content, 'Input>) =
+        let loop = new GameLoop<'Model, 'Content, 'Input>(config, game)
         loop.IsFixedTimeStep <- config.IsFixedTimeStep
         
         let graphics = new GraphicsDeviceManager(loop)
-        graphics.IsFullScreen <- game.Config.IsFullscreen
+        graphics.IsFullScreen <- config.IsFullscreen
         graphics.SynchronizeWithVerticalRetrace <- false
         graphics.PreferredBackBufferWidth <- config.ScreenWidth
         graphics.PreferredBackBufferHeight <- config.ScreenHeight

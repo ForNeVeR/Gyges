@@ -20,5 +20,6 @@ module Input =
         let keys = 
             [ for KeyValue(k, v) in keyBindings do
                 if keyboard.IsKeyDown(k) then yield v ]
+            
         { Pressed = keys }
 

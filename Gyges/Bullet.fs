@@ -13,5 +13,6 @@ module Bullet =
         
     let update (time: Time) (bullet: Bullet): Bullet =
         let dt = time.Delta
-        { bullet with Pos = bullet.Pos - Vector2.UnitY * bullet.Speed * dt }
+        { bullet with
+            Pos = bullet.Pos - Vector2.UnitY * bullet.Speed * dt }
 
