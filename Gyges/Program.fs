@@ -4,17 +4,20 @@ open Gyges.Math
 
 open Gyges
 open System
+open System.Net.Mime
 open Microsoft.Xna.Framework
 
 type Model =
     { Player: Player
       Bullets: Map<Guid, Bullet>
-      Enemies: Map<Guid, Enemy> }
+      Enemies: Map<Guid, Enemy>
+      Score: int }
 
 let init(): Model =     
     { Player = Player.init()
       Bullets = Map.empty
-      Enemies = Map.empty }
+      Enemies = Map.empty
+      Score = 0 }
 
 let handleMove (input: Input) (time: Time) (model: Model): Model =
     let keyToDir key =
@@ -88,6 +91,34 @@ let clearBullets (model: Model): Model =
         
     { model with Bullets = filtered }
          
+let checkCollisions (model: Model): Model =
+    let bullets = model.Bullets
+    let enemies = model.Enemies
+    let collided =
+        [ for KeyValue(bulletId, bullet) in bullets do
+            for KeyValue(enemyId, enemy) in enemies do
+                let bulletBox = bullet.Box |> offset bullet.Pos
+                let enemyBox = enemy.Box |> offset enemy.Pos
+                if bulletBox.Intersects(enemyBox) then
+                    yield (bulletId, enemyId) ]
+    
+    let collidedBulletsIds, collidedEnemiesIds = List.unzip collided
+    let bulletsToRemove = Set.ofList collidedBulletsIds
+    let enemiesToRemove = Set.ofList collidedEnemiesIds
+    
+    let bullets =
+        bullets
+        |> Map.removeKeys bulletsToRemove
+    
+    let enemies =
+        enemies
+        |> Map.removeKeys enemiesToRemove
+        
+    { model with
+        Bullets = bullets
+        Enemies = enemies
+        Score = model.Score + enemiesToRemove.Count }
+       
 let update (input: Input) (time: Time) (model: Model): Model = 
     model
     |> handleMove input time
@@ -95,6 +126,7 @@ let update (input: Input) (time: Time) (model: Model): Model =
     |> (every 1.0f time spawnEnemy)
     |> updateEmenies time
     |> updateBullets time
+    |> checkCollisions
     |> clearEmenies
     |> clearBullets
 
@@ -108,6 +140,8 @@ let draw (canvas: Canvas) (content: Content) (model: Model) =
         canvas.DrawTexture content.Enemy enemy.Pos
         
     canvas.DrawTexture content.Ship model.Player.Pos
+    
+    canvas.DrawText content.ScoreFont (sprintf "%i" model.Score) (Vector2(230.0f, 10.0f))
 
 [<EntryPoint>]
 let main argv =

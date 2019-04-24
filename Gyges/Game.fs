@@ -19,6 +19,7 @@ type Config =
 
 type Canvas =
     { DrawTexture: Texture2D -> Vector2 -> unit
+      DrawText: SpriteFont -> string -> Vector2 -> unit
       Clear: Color -> unit }
     
 type Game<'Model, 'Content, 'Input> =
@@ -51,6 +52,13 @@ type GameLoop<'Model, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
             texture.Width |> float32, texture.Height |> float32
             
         spriteBatch.Draw(texture, pos - Vector2(width, height)/2.0f, Color.White)
+        
+    let drawText (font: SpriteFont) (text: string) (pos: Vector2) =
+        spriteBatch.DrawString
+            ( spriteFont = font,
+              text = text,
+              position = pos,
+              color = Color.White )
     
     let clearScreen (color: Color) =
         spriteBatch.GraphicsDevice.Clear(color)
@@ -81,6 +89,7 @@ type GameLoop<'Model, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
         spriteBatch <- new SpriteBatch(this.GraphicsDevice)
         canvas <-
             { DrawTexture = drawTexture
+              DrawText = drawText
               Clear = clearScreen }
                 
         model <- game.Init()
