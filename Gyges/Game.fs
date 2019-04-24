@@ -141,4 +141,4 @@ module GameLoop =
         loop
         
     let run (loop: GameLoop<'Model, 'Content, 'Input>) =
-        loop.Run()
+        loop.Run(); loop

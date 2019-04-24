@@ -162,8 +162,9 @@ let main argv =
           Draw = draw
         }
     
-    game
-    |> GameLoop.makeWithConfig config
-    |> GameLoop.run
+    use loop =
+        game
+        |> GameLoop.makeWithConfig config
+        |> GameLoop.run
 
     0
