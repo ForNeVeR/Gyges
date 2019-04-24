@@ -16,6 +16,10 @@ type Config =
       IsFullscreen: bool
       IsFixedTimeStep: bool
     }
+
+type Canvas =
+    { DrawTexture: Texture2D -> Vector2 -> unit
+      Clear: Color -> unit }
     
 type Game<'Model, 'Content, 'Input> =
     { Config: Config
@@ -23,15 +27,16 @@ type Game<'Model, 'Content, 'Input> =
       Init: unit -> 'Model
       HandleInput: unit -> 'Input
       Update: 'Input -> Time -> 'Model -> 'Model
-      Draw: SpriteBatch -> 'Content -> 'Model -> unit
+      Draw: Canvas -> 'Content -> 'Model -> unit
     }
-
+    
 type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
     inherit Game()
 
     let mutable renderTarget: RenderTarget2D = null
     let mutable onScreenRect: Rectangle = Unchecked.defaultof<Rectangle>
     let mutable spriteBatch: SpriteBatch = null
+    let mutable canvas: Canvas = Unchecked.defaultof<Canvas>
     
     let mutable model = Unchecked.defaultof<'Model>
     let mutable content = Unchecked.defaultof<'Content>
@@ -42,6 +47,15 @@ type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
     let mutable lastFpsUpdate = 0.
     let fpsUpdateInterval = 100.
 
+    let drawTexture (texture: Texture2D) (pos: Vector2) =
+        let width, height =
+            texture.Width |> float32, texture.Height |> float32
+            
+        spriteBatch.Draw(texture, pos - Vector2(width, height)/2.0f, Color.White)
+    
+    let clearScreen (color: Color) =
+        spriteBatch.GraphicsDevice.Clear(color)
+    
     let updateAndPrintFPS (gameTime : GameTime) (spriteBatch: SpriteBatch) = 
         if gameTime.TotalGameTime.TotalMilliseconds - lastFpsUpdate > fpsUpdateInterval then
             fps <- int (1. / gameTime.ElapsedGameTime.TotalSeconds)
@@ -67,6 +81,9 @@ type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
                                   width, height)
         
         spriteBatch <- new SpriteBatch(this.GraphicsDevice)
+        canvas <-
+            { DrawTexture = drawTexture
+              Clear = clearScreen }
                 
         model <- game.Init()
         base.Initialize()
@@ -90,10 +107,13 @@ type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
         gd.Clear Color.Black
         
         gd.SetRenderTarget(renderTarget)
-        game.Draw spriteBatch content model
+        spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp)
+        spriteBatch.GraphicsDevice.Clear(Color.DarkBlue)
+        game.Draw canvas content model
+        spriteBatch.End()
         
         gd.SetRenderTarget(null)
-        spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp)
+        spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp)
         spriteBatch.Draw(renderTarget, onScreenRect, Color.White)
         updateAndPrintFPS gameTime spriteBatch
         spriteBatch.End()

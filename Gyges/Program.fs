@@ -4,7 +4,6 @@ open Gyges.Utils
 open System
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Graphics
-open Microsoft.Xna.Framework.Media
 
 type Model =
     { Player: Player
@@ -54,8 +53,7 @@ let clearBullets (model: Model): Model =
         |> Map.filterValues (fun bullet -> bullet.Pos.Y > 0.0f)
         
     { model with Bullets = filtered }
-     
-    
+         
 let update (input: Input) (time: Time) (model: Model): Model = 
     model
     |> handleMove input time
@@ -63,23 +61,13 @@ let update (input: Input) (time: Time) (model: Model): Model =
     |> processBullets time
     |> clearBullets
 
-let draw (spriteBatch: SpriteBatch) (content: Content) (model: Model) =
+let draw (canvas: Canvas) (content: Content) (model: Model) =
+    canvas.Clear(Color.DarkBlue)
     
-    let drawTexture (texture: Texture2D) (pos: Vector2) =
-        let width, height =
-            texture.Width |> float32, texture.Height |> float32
-            
-        spriteBatch.Draw(texture, pos - Vector2(width, height)/2.0f, Color.White)
-    
-    spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp)
-    spriteBatch.GraphicsDevice.Clear(Color.DarkBlue)
-   
     for KeyValue(_, bullet) in model.Bullets do
-        drawTexture content.Bullet bullet.Pos
+        canvas.DrawTexture content.Bullet bullet.Pos
         
-    drawTexture content.Ship model.Player.Pos
-     
-    spriteBatch.End()
+    canvas.DrawTexture content.Ship model.Player.Pos
 
 [<EntryPoint>]
 let main argv =
