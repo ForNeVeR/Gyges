@@ -13,6 +13,7 @@
     <Compile Include="Input.fs" />
     <Compile Include="Player.fs" />
     <Compile Include="Bullet.fs" />
+    <Compile Include="Enemy.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -23,6 +24,7 @@
     <None Include="Connection.spritefont" />
     <None Include="ship.png" />
     <None Include="bullet.png" />
+    <None Include="enemy.png" />
     <MonoGameContentReference Include="**\*.mgcb" />
   </ItemGroup>
 

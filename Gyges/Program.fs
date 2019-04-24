@@ -2,16 +2,19 @@
 open Gyges.Utils
 open Gyges.Math
 
+open Gyges
 open System
 open Microsoft.Xna.Framework
 
 type Model =
     { Player: Player
-      Bullets: Map<Guid, Bullet> }
+      Bullets: Map<Guid, Bullet>
+      Enemies: Map<Guid, Enemy> }
 
 let init(): Model =     
     { Player = Player.init()
-      Bullets = Map.empty }
+      Bullets = Map.empty
+      Enemies = Map.empty }
 
 let handleMove (input: Input) (time: Time) (model: Model): Model =
     let keyToDir key =
@@ -47,9 +50,28 @@ let handleFire (input: Input) (time: Time) (model: Model): Model =
     else
         model
 
+let spawnEnemy (model: Model): Model =
+    let rnd = System.Random()
+    let x = rnd.Next(19, 237) |> float32
+    let enemy = { Enemy.init() with Pos = Vector2(x, -29.0f) }
+    
+    { model with Enemies = model.Enemies |> Map.addWithGuid enemy }
+
+let every (period: float32) (time: Time) (action: Model -> Model) (model: Model): Model =
+    let t = time.Total
+    let dt = time.Delta
+    if floor (t/period) <> floor ((t + dt)/period) then
+        action model
+    else
+        model
+
+let updateEmenies (time: Time) (model: Model): Model =
+    { model with
+        Enemies = model.Enemies |> Map.mapValues (Enemy.move time) }
+
 let updateBullets (time: Time) (model: Model): Model =
     { model with
-        Bullets = model.Bullets |> Map.mapValues (Bullet.update time) }
+        Bullets = model.Bullets |> Map.mapValues (Bullet.move time) }
 
 let clearBullets (model: Model): Model =
     let filtered =
@@ -62,6 +84,8 @@ let update (input: Input) (time: Time) (model: Model): Model =
     model
     |> handleMove input time
     |> handleFire input time
+    |> (every 1.0f time spawnEnemy)
+    |> updateEmenies time
     |> updateBullets time
     |> clearBullets
 
@@ -70,6 +94,9 @@ let draw (canvas: Canvas) (content: Content) (model: Model) =
     
     for KeyValue(_, bullet) in model.Bullets do
         canvas.DrawTexture content.Bullet bullet.Pos
+        
+    for KeyValue(_, enemy) in model.Enemies do
+        canvas.DrawTexture content.Enemy enemy.Pos
         
     canvas.DrawTexture content.Ship model.Player.Pos
 

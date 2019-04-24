@@ -11,7 +11,7 @@ module Bullet =
         { Pos = pos
           Speed = 200.0f }
         
-    let update (time: Time) (bullet: Bullet): Bullet =
+    let move (time: Time) (bullet: Bullet): Bullet =
         let dt = time.Delta
         { bullet with
             Pos = bullet.Pos - Vector2.UnitY * bullet.Speed * dt }
