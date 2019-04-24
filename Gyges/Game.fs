@@ -5,25 +5,25 @@ open Microsoft.Xna.Framework.Content
 open Microsoft.Xna.Framework.Graphics;
 
 type Time =
-    {
-        Total: float32
-        Delta: float32
-    }
+    { Total: float32
+      Delta: float32 }
     
 type Config =
-    {
-        Width: int
-        Height: int
+    { GameWidth: int
+      GameHeight: int
+      ScreenWidth: int
+      ScreenHeight: int
+      IsFullscreen: bool
+      IsFixedTimeStep: bool
     }
     
 type Game<'Model, 'Content, 'Input> =
-    {
-        Config: Config
-        LoadContent: ContentManager -> 'Content
-        Init: unit -> 'Model
-        HandleInput: unit -> 'Input
-        Update: 'Input -> Time -> 'Model -> 'Model
-        Draw: SpriteBatch -> 'Content -> 'Model -> unit
+    { Config: Config
+      LoadContent: ContentManager -> 'Content
+      Init: unit -> 'Model
+      HandleInput: unit -> 'Input
+      Update: 'Input -> Time -> 'Model -> 'Model
+      Draw: SpriteBatch -> 'Content -> 'Model -> unit
     }
 
 type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
@@ -57,12 +57,12 @@ type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
         let gd = this.GraphicsDevice
         let config = game.Config
         
-        renderTarget <- new RenderTarget2D(gd, config.Width, config.Height)
+        renderTarget <- new RenderTarget2D(gd, config.GameWidth, config.GameHeight)
         let screenWidth = gd.PresentationParameters.BackBufferWidth;
         let screenHeight = gd.PresentationParameters.BackBufferHeight;
-        let scale = min (screenWidth/config.Width) (screenHeight/config.Height)
-        let width = scale * config.Width
-        let height = scale * config.Height
+        let scale = min (screenWidth/config.GameWidth) (screenHeight/config.GameHeight)
+        let width = scale * config.GameWidth
+        let height = scale * config.GameHeight
         onScreenRect <- Rectangle(screenWidth/2 - width/2, screenHeight/2 - height/2,
                                   width, height)
         
@@ -78,10 +78,8 @@ type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
 
     override __.Update(gameTime) =
         let time =
-            {
-                Total = gameTime.TotalGameTime.TotalSeconds |> float32
-                Delta = gameTime.ElapsedGameTime.TotalSeconds |> float32
-            }
+            { Total = gameTime.TotalGameTime.TotalSeconds |> float32
+              Delta = gameTime.ElapsedGameTime.TotalSeconds |> float32 }
         
         input <- game.HandleInput()
         model <- game.Update input time model
@@ -100,4 +98,21 @@ type GameLoop<'Model, 'Content, 'Input>(game: Game<_, _, _>) =
         updateAndPrintFPS gameTime spriteBatch
         spriteBatch.End()
         base.Draw(gameTime)
+
+module GameLoop =
+    let make (game: Game<'Model, 'Content, 'Input>) =
+        let config = game.Config
+        let loop = new GameLoop<'Model, 'Content, 'Input>(game)
+        loop.IsFixedTimeStep <- config.IsFixedTimeStep
         
+        let graphics = new GraphicsDeviceManager(loop)
+        graphics.IsFullScreen <- game.Config.IsFullscreen
+        graphics.SynchronizeWithVerticalRetrace <- false
+        graphics.PreferredBackBufferWidth <- config.ScreenWidth
+        graphics.PreferredBackBufferHeight <- config.ScreenHeight
+        graphics.ApplyChanges()
+        
+        loop
+        
+    let run (loop: GameLoop<'Model, 'Content, 'Input>) =
+        loop.Run()

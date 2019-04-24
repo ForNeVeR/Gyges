@@ -70,11 +70,18 @@ let draw (spriteBatch: SpriteBatch) (content: Content) (model: Model) =
     spriteBatch.End()
 
 [<EntryPoint>]
-let main argv =    
+let main argv =
+    let config =
+        { GameWidth = 256
+          GameHeight = 192
+          ScreenWidth = 640
+          ScreenHeight = 480
+          IsFullscreen = false
+          IsFixedTimeStep = false
+        }
+    
     let game =
-        { Config =
-            { Width = 256
-              Height = 192 }            
+        { Config = config
           LoadContent = Content.load
           Init = init
           HandleInput = Input.handle
@@ -82,15 +89,8 @@ let main argv =
           Draw = draw
         }
     
-    use loop = new GameLoop<_, _, _>(game)
-    loop.IsFixedTimeStep <- false
+    game
+    |> GameLoop.make
+    |> GameLoop.run
 
-    use graphics = new GraphicsDeviceManager(loop)
-    graphics.IsFullScreen <- false
-    graphics.SynchronizeWithVerticalRetrace <- false
-    graphics.PreferredBackBufferWidth <- 640      
-    graphics.PreferredBackBufferHeight <- 480
-    graphics.ApplyChanges()
-    
-    loop.Run()
     0
