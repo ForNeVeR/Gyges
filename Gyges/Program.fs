@@ -69,6 +69,14 @@ let updateEmenies (time: Time) (model: Model): Model =
     { model with
         Enemies = model.Enemies |> Map.mapValues (Enemy.move time) }
 
+let clearEmenies (model: Model): Model =
+    let filtered =
+        model.Enemies
+        |> Map.filterValues (fun enemy -> enemy.Pos.Y < 192.0f + 19.0f)
+        
+    { model with
+        Enemies = filtered }
+
 let updateBullets (time: Time) (model: Model): Model =
     { model with
         Bullets = model.Bullets |> Map.mapValues (Bullet.move time) }
@@ -87,6 +95,7 @@ let update (input: Input) (time: Time) (model: Model): Model =
     |> (every 1.0f time spawnEnemy)
     |> updateEmenies time
     |> updateBullets time
+    |> clearEmenies
     |> clearBullets
 
 let draw (canvas: Canvas) (content: Content) (model: Model) =
