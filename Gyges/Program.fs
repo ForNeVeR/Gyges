@@ -4,6 +4,7 @@ open Gyges.Utils
 open System
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Graphics
+open Microsoft.Xna.Framework.Media
 
 type Model =
     { Player: Player
@@ -12,44 +13,55 @@ type Model =
 let init(): Model =     
     { Player = Player.init()
       Bullets = Map.empty }
-    
-let update (input: Input) (time: Time) (model: Model): Model = 
-    let keyToDir = function
+
+let handleMove (input: Input) (time: Time) (model: Model): Model =
+    let keyToDir key =
+        match key with
         | Up    -> -Vector2.UnitY
         | Left  -> -Vector2.UnitX
         | Down  ->  Vector2.UnitY
         | Right ->  Vector2.UnitX
         | _ -> Vector2.Zero
-    
+        
     let dir =
         input.Pressed |> List.sumBy keyToDir
-    
+        
+    { model with Player = model.Player |> Player.move dir time }
+
+let handleFire (input: Input) (time: Time) (model: Model): Model =
+    let player = model.Player
     let isFireAllowed = 
         input.Pressed |> List.contains Fire &&
-        time.Total - model.Player.LastFireTime > model.Player.FireRate
+        time.Total - player.LastFireTime > player.FireRate
     
-    let player =
-        model.Player
-        |> Player.update
-               [ yield Player.Move dir
-                 if isFireAllowed then
-                     yield Player.Fire ]
-               time
-    
-    let bullets =
-        model.Bullets
-        |> Map.mapValues (Bullet.update time)
-        |> Map.filterValues (fun bullet -> bullet.Pos.Y > 0.0f)
-    
-    let bullets =
-        if isFireAllowed then
-            bullets |> Map.add (Guid.NewGuid()) (Bullet.init (model.Player.Pos + Vector2(0.0f, -10.0f)))
-        else
-            bullets
+    if isFireAllowed then
+        let bullets =
+            model.Bullets
+            |> GuidMap.add (Bullet.init (player.Pos + Vector2(0.0f, -10.0f)))
+            
+        { model with Player = player |> Player.fire time
+                     Bullets = bullets }
+        
+    else
+        model
 
-      
-    { model with Player = player
-                 Bullets = bullets }
+let processBullets (time: Time) (model: Model): Model =
+    { model with Bullets = model.Bullets |> Map.mapValues (Bullet.update time) }
+
+let clearBullets (model: Model): Model =
+    let filtered =
+        model.Bullets
+        |> Map.filterValues (fun bullet -> bullet.Pos.Y > 0.0f)
+        
+    { model with Bullets = filtered }
+     
+    
+let update (input: Input) (time: Time) (model: Model): Model = 
+    model
+    |> handleMove input time
+    |> handleFire input time
+    |> processBullets time
+    |> clearBullets
 
 let draw (spriteBatch: SpriteBatch) (content: Content) (model: Model) =
     
