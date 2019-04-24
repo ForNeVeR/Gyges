@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="Math.fs" />
+    <Compile Include="Utils.fs" />
     <Compile Include="Game.fs" />
     <Compile Include="Content.fs" />
     <Compile Include="Input.fs" />
@@ -28,7 +29,6 @@
   <ItemGroup>
     <PackageReference Include="MonoGame.Content.Builder" Version="3.7.0.4" />
     <PackageReference Include="MonoGame.Framework.DesktopGL.Core" Version="3.7.0.7" />
-    <PackageReference Include="FSharpx.Collections" Version="2.0.0-beta3" />
   </ItemGroup>
 
 </Project>

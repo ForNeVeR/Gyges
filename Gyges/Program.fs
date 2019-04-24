@@ -1,15 +1,17 @@
 ﻿open Gyges
+open Gyges.Utils
 
+open System
 open Microsoft.Xna.Framework
 open Microsoft.Xna.Framework.Graphics
 
 type Model =
     { Player: Player
-      Bullets: Bullet list }
+      Bullets: Map<Guid, Bullet> }
 
 let init(): Model =     
     { Player = Player.init()
-      Bullets = List.empty }
+      Bullets = Map.empty }
     
 let update (input: Input) (time: Time) (model: Model): Model = 
     let keyToDir = function
@@ -36,17 +38,18 @@ let update (input: Input) (time: Time) (model: Model): Model =
     
     let bullets =
         model.Bullets
-        |> List.map (Bullet.update time)
-        |> List.filter (fun x -> x.Pos.Y > 0.0f)
-        
-    let newBullet =
+        |> Map.mapValues (Bullet.update time)
+        |> Map.filterValues (fun bullet -> bullet.Pos.Y > 0.0f)
+    
+    let bullets =
         if isFireAllowed then
-            [ Bullet.init (model.Player.Pos + Vector2(0.0f, -10.0f)) ]
+            bullets |> Map.add (Guid.NewGuid()) (Bullet.init (model.Player.Pos + Vector2(0.0f, -10.0f)))
         else
-            [  ]
+            bullets
+
       
     { model with Player = player
-                 Bullets = newBullet @ bullets }
+                 Bullets = bullets }
 
 let draw (spriteBatch: SpriteBatch) (content: Content) (model: Model) =
     
@@ -59,7 +62,7 @@ let draw (spriteBatch: SpriteBatch) (content: Content) (model: Model) =
     spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp)
     spriteBatch.GraphicsDevice.Clear(Color.DarkBlue)
    
-    for bullet in model.Bullets do
+    for KeyValue(_, bullet) in model.Bullets do
         drawTexture content.Bullet bullet.Pos
         
     drawTexture content.Ship model.Player.Pos
