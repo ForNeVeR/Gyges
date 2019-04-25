@@ -1,9 +1,11 @@
-# Gyges [![Status Umbra][status-umbra]][andivionian-status-classifier] [![Appveyor Build][badge-appveyor]][build-appveyor]
+# Gyges [![Status Enfer][status-enfer]][andivionian-status-classifier] [![Appveyor Build][badge-appveyor]][build-appveyor]
 
 Gyges (named after [one of the planets][gyges] in the [Tyrian][tyrian]
 universe) will be a "Shoot 'em up" space shooter.
 
 Will be submitted to the [8-bit SITC Game Jam][sitc-game-jam].
+
+![Syges Demo][gyges-demo]
 
 ## Build
 
@@ -27,6 +29,7 @@ $ dotnet run --project .\Gyges\Gyges.fsproj
 [build-appveyor]: https://ci.appveyor.com/project/gsomix/sitc-game-jam/branch/master
 [badge-appveyor]: https://ci.appveyor.com/api/projects/status/bg86bnt2ccnrkah5?svg=true
 
-[andivionian-status-classifier]: https://github.com/ForNeVeR/andivionian-status-classifier#status-umbra-
-[status-umbra]: https://img.shields.io/badge/status-umbra-red.svg
+[andivionian-status-classifier]: https://github.com/ForNeVeR/andivionian-status-classifier##status-enfer-
+[status-enfer]: https://img.shields.io/badge/status-enfer-orange.svg
 
+[gyges-demo]: gyges_demo.gif
