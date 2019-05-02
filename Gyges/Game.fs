@@ -22,15 +22,15 @@ type Canvas =
       DrawText: SpriteFont -> string -> Vector2 -> unit
       Clear: Color -> unit }
     
-type Game<'Model, 'Content, 'Input> =
+type Game<'World, 'Content, 'Input> =
     { LoadContent: ContentManager -> 'Content
-      Init: unit -> 'Model
+      Init: unit -> 'World
       HandleInput: unit -> 'Input
-      Update: 'Input -> Time -> 'Model -> 'Model
-      Draw: Canvas -> 'Content -> 'Model -> unit
+      Update: 'Input -> Time -> 'World -> 'World
+      Draw: Canvas -> 'Content -> 'World -> unit
     }
     
-type GameLoop<'Model, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
+type GameLoop<'World, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
     inherit Game()
 
     let mutable renderTarget: RenderTarget2D = null
@@ -38,7 +38,7 @@ type GameLoop<'Model, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
     let mutable spriteBatch: SpriteBatch = null
     let mutable canvas: Canvas = Unchecked.defaultof<Canvas>
     
-    let mutable model = Unchecked.defaultof<'Model>
+    let mutable model = Unchecked.defaultof<'World>
     let mutable content = Unchecked.defaultof<'Content>
     let mutable input = Unchecked.defaultof<'Input>
     
@@ -127,8 +127,8 @@ type GameLoop<'Model, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
         base.Draw(gameTime)
 
 module GameLoop =
-    let makeWithConfig (config: Config) (game: Game<'Model, 'Content, 'Input>) =
-        let loop = new GameLoop<'Model, 'Content, 'Input>(config, game)
+    let makeWithConfig (config: Config) (game: Game<'World, 'Content, 'Input>) =
+        let loop = new GameLoop<'World, 'Content, 'Input>(config, game)
         loop.IsFixedTimeStep <- config.IsFixedTimeStep
         
         let graphics = new GraphicsDeviceManager(loop)
