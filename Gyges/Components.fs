@@ -3,7 +3,12 @@ module Gyges.Components
 open Microsoft.Xna.Framework
 open Gyges.Math
 
-type Position = Position of Vector2
+type Position = Position of Vector2 with
+    static member (+) (Position lhs, Position rhs): Position =
+        lhs + rhs |> Position
+    
+    static member (-) (Position lhs, Position rhs): Position =
+        lhs - rhs |> Position
 
 type Velocity = Velocity of Vector2
 
@@ -22,21 +27,11 @@ type Movement = Time -> Engine -> Velocity
 
 module Movement =
     
-    let verticalUp (time: Time) (engine: Engine): Velocity =
+    let verticalUp (_time: Time) (engine: Engine): Velocity =
         -Vector2.UnitY * engine.Speed |> Velocity
 
-    let verticalDown (time: Time) (engine: Engine): Velocity =
+    let verticalDown (_time: Time) (engine: Engine): Velocity =
         Vector2.UnitY * engine.Speed |> Velocity
 
-type WeaponRecharger =
-    { FireRate: float32
-      LastFireTime: float32  
-    }
-
-type WeaponType =
-    | Vertical
-    
-type Weapon =
-    { Type: WeaponType
-      Recharger: WeaponRecharger
-    }
+    let directed (Position direction) (_time: Time) (engine: Engine): Velocity =
+        (direction |> norm) * engine.Speed |> Velocity

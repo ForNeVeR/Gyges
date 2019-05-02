@@ -13,8 +13,9 @@
     <Compile Include="Input.fs" />
     <Compile Include="Components.fs" />
     <Compile Include="Physics.fs" />
-    <Compile Include="Player.fs" />
     <Compile Include="Bullet.fs" />
+    <Compile Include="Weapon.fs" />
+    <Compile Include="Player.fs" />
     <Compile Include="Enemy.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

@@ -10,12 +10,14 @@ type World =
     { Player: Player
       Bullets: Map<Guid, Bullet>
       Enemies: Map<Guid, Enemy>
+      EnemiesBullets: Map<Guid, Bullet>
       Score: int }
 
 let init(): World =     
     { Player = Player.create()
       Bullets = Map.empty
       Enemies = Map.empty
+      EnemiesBullets = Map.empty
       Score = 0 }
 
 let handleMove (input: Input) (time: Time) (model: World): World =
@@ -38,22 +40,18 @@ let handleMove (input: Input) (time: Time) (model: World): World =
                  |> Player.updatePosition time }
 
 let handleFire (input: Input) (time: Time) (model: World): World =
-    let player = model.Player
-    let isFireAllowed = 
-        input.Pressed |> List.contains Fire &&
-        time.Total - player.Weapon.Recharger.LastFireTime > (1.0f/player.Weapon.Recharger.FireRate)
-    
-    let (Position(pos)) = player.Position
-    
-    if isFireAllowed then
+    let player = model.Player  
+    if input.Pressed |> List.contains Fire then
+        let bullet, weapon = player.Weapon |> Weapon.fire time
         let bullets =
-            model.Bullets
-            |> Map.addWithGuid (Bullet.create (pos + Vector2(0.0f, -10.0f)))
+            match bullet with
+            | Some bullet -> model.Bullets |> Map.addWithGuid bullet
+            | None -> model.Bullets        
+        let player = { player with Weapon = weapon }  
             
         { model with
-            Player = player |> Player.fire time
+            Player = player
             Bullets = bullets }
-        
     else
         model
 
@@ -72,9 +70,25 @@ let every (period: float32) (time: Time) (action: World -> World) (model: World)
     else
         model
 
-let updateEmenies (time: Time) (model: World): World =
-    { model with
-        Enemies = model.Enemies |> Map.mapValues (Enemy.updatePosition time) }
+let updateEmenies (time: Time) (world: World): World =
+    let enemies =
+        world.Enemies
+        |> Map.mapValues (Enemy.updatePosition time)
+        |> Map.mapValues (Enemy.aim world.Player.Position)
+    
+    let folder (world: World) (enemyId: Guid) (enemy: Enemy): World =
+        let bullet, weapon = enemy.Weapon |> Weapon.fire time
+        let enemy = { enemy with Weapon = weapon }
+        let enemiesBullets =
+            match bullet with
+            | Some bullet -> world.EnemiesBullets |> Map.addWithGuid bullet
+            | None -> world.EnemiesBullets
+        
+        { world with
+            Enemies = world.Enemies |> Map.add enemyId enemy
+            EnemiesBullets = enemiesBullets }
+    
+    enemies |> Map.fold folder world
 
 let clearEmenies (model: World): World =    
     let filter: Enemy -> bool =
@@ -91,7 +105,8 @@ let clearEmenies (model: World): World =
 
 let updateBullets (time: Time) (model: World): World =
     { model with
-        Bullets = model.Bullets |> Map.mapValues (Bullet.updatePosition time) }
+        Bullets = model.Bullets |> Map.mapValues (Bullet.updatePosition time)
+        EnemiesBullets = model.EnemiesBullets |> Map.mapValues (Bullet.updatePosition time) }
 
 let clearBullets (model: World): World =
     let filter: Bullet -> bool =
@@ -141,6 +156,9 @@ let draw (canvas: Canvas) (content: Content) (model: World) =
     canvas.Clear(Color.DarkBlue)
     
     for KeyValue(_, { Position = Position value }) in model.Bullets do
+        canvas.DrawTexture content.Bullet value
+    
+    for KeyValue(_, { Position = Position value }) in model.EnemiesBullets do
         canvas.DrawTexture content.Bullet value
         
     for KeyValue(_, { Position = Position value }) in model.Enemies do

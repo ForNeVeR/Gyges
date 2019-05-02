@@ -11,10 +11,10 @@ type Bullet =
       Health: int }
     
 module Bullet =
-    let create(position: Vector2): Bullet =
-        { Position = position |> Position
+    let create (position: Position) (movement: Movement): Bullet =
+        { Position = position
           Engine = { Speed = 200.0f }
-          Movement = Movement.verticalUp
+          Movement = movement
           Collider = Rectangle(0, 0, 15, 11) |> Collider
           Health = 1 }
         
