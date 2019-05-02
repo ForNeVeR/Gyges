@@ -33,7 +33,7 @@ module Enemy =
           Movement = Movement.verticalDown
           Collider = Rectangle(0, 0, 37, 29) |> Collider
           Weapon = weapon
-          Health = 10 }
+          Health = 5 }
 
     let updatePosition (time: Time) (enemy: Enemy): Enemy =
         let dt = time.Delta

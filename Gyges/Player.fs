@@ -8,6 +8,7 @@ type Player =
       Velocity: Velocity
       Engine: Engine
       Weapon: Weapon
+      Collider: Collider
       Health: int }
     
 module Player =
@@ -17,7 +18,7 @@ module Player =
         let position = Vector2(50.0f, 50.0f) |> Position
         
         let recharger: WeaponRecharger =
-            { FireRate = 10.0f
+            { FireRate = 7.0f
               LastFireTime = 0.0f }
             
         let weapon: Weapon =
@@ -32,6 +33,7 @@ module Player =
           Velocity = Vector2.Zero |> Velocity
           Engine = engine
           Weapon = weapon
+          Collider = Rectangle(0, 0, 21, 27) |> Collider
           Health = 5 }
     
     let updatePosition (time: Time) (player: Player): Player =

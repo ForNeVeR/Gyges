@@ -114,14 +114,12 @@ let clearBullets (model: World): World =
     let filter: Bullet -> bool =
         fun { Position = Position value; Health = health } ->
             value.Y > 0.0f && health > 0
-    
-    let filtered =
-        model.Bullets
-        |> Map.filterValues filter
         
-    { model with Bullets = filtered }
+    { model with
+        Bullets = model.Bullets |> Map.filterValues filter
+        EnemiesBullets = model.EnemiesBullets |> Map.filterValues filter }
          
-let checkCollisions (model: World): World =
+let collideEmeniesAndBullets (model: World): World =
     let bullets = model.Bullets
     let enemies = model.Enemies
     let collided = seq {
@@ -131,7 +129,7 @@ let checkCollisions (model: World): World =
                 let enemyCollider = enemy.Collider |> Collider.offset enemy.Position
                 if Collider.checkCollision bulletCollider enemyCollider then
                     yield (bulletId, enemyId)
-        }
+    }
     
     let folder (model: World) (bulletId, enemyId) =
         let bullet = model.Bullets.[bulletId]
@@ -142,6 +140,25 @@ let checkCollisions (model: World): World =
             Enemies = model.Enemies |> Map.add enemyId (Enemy.updateHealth 1 enemy) }
 
     collided |> Seq.fold folder model
+
+let collidePlayerAndBullets (model: World): World =
+    let player = model.Player
+    let bullets = model.EnemiesBullets
+    let collided = seq {
+       for KeyValue(bulletId, bullet) in bullets do
+          let bulletCollider = bullet.Collider |> Collider.offset bullet.Position
+          let playerCollider = player.Collider |> Collider.offset player.Position
+          if Collider.checkCollision bulletCollider playerCollider then
+                yield bulletId
+    }
+    
+    let folder (model: World) bulletId =
+        let bullet = model.EnemiesBullets.[bulletId]
+        { model with
+            EnemiesBullets = model.EnemiesBullets |> Map.add bulletId (Bullet.updateHealth 1 bullet)
+            Player = model.Player |> Player.updateHealth 1 }
+
+    collided |> Seq.fold folder model    
        
 let update (input: Input) (time: Time) (model: World): World = 
     model
@@ -150,7 +167,8 @@ let update (input: Input) (time: Time) (model: World): World =
     |> (every 1.0f time spawnEnemy)
     |> updateEmenies time
     |> updateBullets time
-    |> checkCollisions
+    |> collideEmeniesAndBullets
+    |> collidePlayerAndBullets
     |> clearEmenies
     |> clearBullets
 
