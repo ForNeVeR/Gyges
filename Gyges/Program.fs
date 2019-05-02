@@ -91,17 +91,19 @@ let updateEmenies (time: Time) (world: World): World =
     enemies |> Map.fold folder world
 
 let clearEmenies (model: World): World =    
-    let filter: Enemy -> bool =
-        fun { Position = Position value; Health = health } ->
-            value.Y < 192.0f + 19.0f && health > 0
+    let filterByPosition: Enemy -> bool =
+        fun { Position = Position value } -> value.Y < 240.0f + 19.0f
     
-    let filtered =
-        model.Enemies
-        |> Map.filterValues filter
+    let onScreen = model.Enemies |> Map.filterValues filterByPosition
+            
+    let filterByHealth: Enemy -> bool =
+        fun { Health = health } -> health > 0
+    
+    let alive = onScreen |> Map.filterValues filterByHealth
         
     { model with
-        Score = model.Score + model.Enemies.Count - filtered.Count
-        Enemies = filtered }
+        Score = model.Score + onScreen.Count - alive.Count
+        Enemies = alive }
 
 let updateBullets (time: Time) (model: World): World =
     { model with
@@ -168,6 +170,7 @@ let draw (canvas: Canvas) (content: Content) (model: World) =
     canvas.DrawTexture content.Ship pos
     
     canvas.DrawText content.ScoreFont (sprintf "%i" model.Score) (Vector2(230.0f, 10.0f))
+    canvas.DrawText content.ScoreFont (sprintf "%i" model.Player.Health) (Vector2(230.0f, 20.0f))
 
 [<EntryPoint>]
 let main argv =
