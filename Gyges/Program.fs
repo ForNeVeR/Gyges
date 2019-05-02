@@ -1,10 +1,9 @@
 ﻿open Gyges
 open Gyges.Utils
 open Gyges.Math
+open Gyges.Components
 
-open Gyges
 open System
-open System.Net.Mime
 open Microsoft.Xna.Framework
 
 type Model =
@@ -14,7 +13,7 @@ type Model =
       Score: int }
 
 let init(): Model =     
-    { Player = Player.init()
+    { Player = Player.create()
       Bullets = Map.empty
       Enemies = Map.empty
       Score = 0 }
@@ -33,18 +32,23 @@ let handleMove (input: Input) (time: Time) (model: Model): Model =
         |> List.sumBy keyToDir
         |> norm
         
-    { model with Player = model.Player |> Player.move dir time }
+    { model with
+        Player = model.Player
+                 |> Player.updateVelocity dir
+                 |> Player.updatePosition time }
 
 let handleFire (input: Input) (time: Time) (model: Model): Model =
     let player = model.Player
     let isFireAllowed = 
         input.Pressed |> List.contains Fire &&
-        time.Total - player.LastFireTime > player.FireRate
+        time.Total - player.Weapon.Recharger.LastFireTime > (1.0f/player.Weapon.Recharger.FireRate)
+    
+    let (Position(pos)) = player.Position
     
     if isFireAllowed then
         let bullets =
             model.Bullets
-            |> Map.addWithGuid (Bullet.init (player.Pos + Vector2(0.0f, -10.0f)))
+            |> Map.addWithGuid (Bullet.create (pos + Vector2(0.0f, -10.0f)))
             
         { model with
             Player = player |> Player.fire time
@@ -56,7 +60,7 @@ let handleFire (input: Input) (time: Time) (model: Model): Model =
 let spawnEnemy (model: Model): Model =
     let rnd = System.Random()
     let x = rnd.Next(19, 237) |> float32
-    let enemy = { Enemy.init() with Pos = Vector2(x, -29.0f) }
+    let enemy = { Enemy.create() with Position = Vector2(x, -29.0f) |> Position }
     
     { model with Enemies = model.Enemies |> Map.addWithGuid enemy }
 
@@ -70,54 +74,57 @@ let every (period: float32) (time: Time) (action: Model -> Model) (model: Model)
 
 let updateEmenies (time: Time) (model: Model): Model =
     { model with
-        Enemies = model.Enemies |> Map.mapValues (Enemy.move time) }
+        Enemies = model.Enemies |> Map.mapValues (Enemy.updatePosition time) }
 
-let clearEmenies (model: Model): Model =
+let clearEmenies (model: Model): Model =    
+    let filter: Enemy -> bool =
+        fun { Position = Position value; Health = health } ->
+            value.Y < 192.0f + 19.0f && health > 0
+    
     let filtered =
         model.Enemies
-        |> Map.filterValues (fun enemy -> enemy.Pos.Y < 192.0f + 19.0f)
+        |> Map.filterValues filter
         
     { model with
+        Score = model.Score + model.Enemies.Count - filtered.Count
         Enemies = filtered }
 
 let updateBullets (time: Time) (model: Model): Model =
     { model with
-        Bullets = model.Bullets |> Map.mapValues (Bullet.move time) }
+        Bullets = model.Bullets |> Map.mapValues (Bullet.updatePosition time) }
 
 let clearBullets (model: Model): Model =
+    let filter: Bullet -> bool =
+        fun { Position = Position value; Health = health } ->
+            value.Y > 0.0f && health > 0
+    
     let filtered =
         model.Bullets
-        |> Map.filterValues (fun bullet -> bullet.Pos.Y > 0.0f)
+        |> Map.filterValues filter
         
     { model with Bullets = filtered }
          
 let checkCollisions (model: Model): Model =
     let bullets = model.Bullets
     let enemies = model.Enemies
-    let collided =
-        [ for KeyValue(bulletId, bullet) in bullets do
+    let collided = seq {
+        for KeyValue(bulletId, bullet) in bullets do
             for KeyValue(enemyId, enemy) in enemies do
-                let bulletBox = bullet.Box |> offset bullet.Pos
-                let enemyBox = enemy.Box |> offset enemy.Pos
-                if bulletBox.Intersects(enemyBox) then
-                    yield (bulletId, enemyId) ]
+                let bulletCollider = bullet.Collider |> Collider.offset bullet.Position
+                let enemyCollider = enemy.Collider |> Collider.offset enemy.Position
+                if Collider.checkCollision bulletCollider enemyCollider then
+                    yield (bulletId, enemyId)
+        }
     
-    let collidedBulletsIds, collidedEnemiesIds = List.unzip collided
-    let bulletsToRemove = Set.ofList collidedBulletsIds
-    let enemiesToRemove = Set.ofList collidedEnemiesIds
-    
-    let bullets =
-        bullets
-        |> Map.removeKeys bulletsToRemove
-    
-    let enemies =
-        enemies
-        |> Map.removeKeys enemiesToRemove
+    let folder (model: Model) (bulletId, enemyId) =
+        let bullet = model.Bullets.[bulletId]
+        let enemy = model.Enemies.[enemyId]
         
-    { model with
-        Bullets = bullets
-        Enemies = enemies
-        Score = model.Score + enemiesToRemove.Count }
+        { model with
+            Bullets = model.Bullets |> Map.add bulletId (Bullet.updateHealth 1 bullet)
+            Enemies = model.Enemies |> Map.add enemyId (Enemy.updateHealth 1 enemy) }
+
+    collided |> Seq.fold folder model
        
 let update (input: Input) (time: Time) (model: Model): Model = 
     model
@@ -133,21 +140,22 @@ let update (input: Input) (time: Time) (model: Model): Model =
 let draw (canvas: Canvas) (content: Content) (model: Model) =
     canvas.Clear(Color.DarkBlue)
     
-    for KeyValue(_, bullet) in model.Bullets do
-        canvas.DrawTexture content.Bullet bullet.Pos
+    for KeyValue(_, { Position = Position value }) in model.Bullets do
+        canvas.DrawTexture content.Bullet value
         
-    for KeyValue(_, enemy) in model.Enemies do
-        canvas.DrawTexture content.Enemy enemy.Pos
-        
-    canvas.DrawTexture content.Ship model.Player.Pos
+    for KeyValue(_, { Position = Position value }) in model.Enemies do
+        canvas.DrawTexture content.Enemy value
+    
+    let (Position(pos)) = model.Player.Position    
+    canvas.DrawTexture content.Ship pos
     
     canvas.DrawText content.ScoreFont (sprintf "%i" model.Score) (Vector2(230.0f, 10.0f))
 
 [<EntryPoint>]
 let main argv =
     let config =
-        { GameWidth = 256
-          GameHeight = 192
+        { GameWidth = 320
+          GameHeight = 240
           ScreenWidth = 640
           ScreenHeight = 480
           IsFullscreen = false

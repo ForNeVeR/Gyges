@@ -1,20 +1,28 @@
 namespace Gyges
 
 open Microsoft.Xna.Framework
+open Components
 
 type Enemy =
-    { Pos: Vector2
-      Velocity: float32
-      Box: Rectangle
-      Hitpoints: int }
+    { Position: Position
+      Engine: Engine
+      Movement: Movement
+      Collider: Collider
+      Health: int }
     
 module Enemy =
-    let init () =
-        { Pos = Vector2(0.0f, 0.0f)
-          Velocity = 50.0f
-          Box = Rectangle(0, 0, 37, 29)
-          Hitpoints = 2 }
-        
-    let move (time: Time) (enemy: Enemy): Enemy =
+    let create(): Enemy =        
+        { Position = Position (Vector2(0.0f, 0.0f))
+          Engine = { Speed = 50.0f }
+          Movement = Movement.verticalDown
+          Collider = Rectangle(0, 0, 37, 29) |> Collider
+          Health = 2 }
+
+    let updatePosition (time: Time) (enemy: Enemy): Enemy =
         let dt = time.Delta
-        { enemy with Pos = enemy.Pos + enemy.Velocity*Vector2.UnitY*dt }
+        let velocity = enemy.Movement time enemy.Engine        
+        { enemy with
+            Position = Physics.motionStep enemy.Position velocity dt }
+        
+    let updateHealth (damage: int) (enemy: Enemy): Enemy =
+        { enemy with Health = enemy.Health - damage }

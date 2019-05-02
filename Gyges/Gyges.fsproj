@@ -11,6 +11,8 @@
     <Compile Include="Game.fs" />
     <Compile Include="Content.fs" />
     <Compile Include="Input.fs" />
+    <Compile Include="Components.fs" />
+    <Compile Include="Physics.fs" />
     <Compile Include="Player.fs" />
     <Compile Include="Bullet.fs" />
     <Compile Include="Enemy.fs" />
