@@ -23,7 +23,7 @@
   <!-- Processed by content pipeline on build into xnb files -->
   <ItemGroup>
     <None Include="Content.mgcb" />
-    <None Include="Connection.ttf" />
+    <None Include="Connection.otf" />
     <None Include="Connection.spritefont" />
     <None Include="ship.png" />
     <None Include="bullet.png" />
