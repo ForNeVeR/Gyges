@@ -30,7 +30,7 @@ type Game<'World, 'Content, 'Input> =
       Draw: Canvas -> 'Content -> 'World -> unit
     }
     
-type GameLoop<'World, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
+type GameState<'World, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
     inherit Game()
 
     let mutable renderTarget: RenderTarget2D = null
@@ -126,9 +126,9 @@ type GameLoop<'World, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
         spriteBatch.End()
         base.Draw(gameTime)
 
-module GameLoop =
-    let makeWithConfig (config: Config) (game: Game<'World, 'Content, 'Input>) =
-        let loop = new GameLoop<'World, 'Content, 'Input>(config, game)
+module GameState =
+    let create (config: Config) (game: Game<'World, 'Content, 'Input>) =
+        let loop = new GameState<'World, 'Content, 'Input>(config, game)
         loop.IsFixedTimeStep <- config.IsFixedTimeStep
         
         let graphics = new GraphicsDeviceManager(loop)
@@ -140,5 +140,5 @@ module GameLoop =
         
         loop
         
-    let run (loop: GameLoop<'Model, 'Content, 'Input>) =
+    let run (loop: GameState<'Model, 'Content, 'Input>) =
         loop.Run(); loop

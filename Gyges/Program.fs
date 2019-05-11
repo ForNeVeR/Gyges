@@ -45,7 +45,7 @@ let handleFire (input: Input) (time: Time) (model: World): World =
         let bullet, weapon = player.Weapon |> Weapon.fire time
         let bullets =
             match bullet with
-            | Some bullet -> model.Bullets |> Map.addWithGuid bullet
+            | Some bullet -> model.Bullets |> Map.addNew bullet
             | None -> model.Bullets        
         let player = { player with Weapon = weapon }  
             
@@ -60,7 +60,7 @@ let spawnEnemy (model: World): World =
     let x = rnd.Next(19, 237) |> float32
     let enemy = { Enemy.create() with Position = Vector2(x, -29.0f) |> Position }
     
-    { model with Enemies = model.Enemies |> Map.addWithGuid enemy }
+    { model with Enemies = model.Enemies |> Map.addNew enemy }
 
 let every (period: float32) (time: Time) (action: World -> World) (model: World): World =
     let t = time.Total
@@ -70,7 +70,7 @@ let every (period: float32) (time: Time) (action: World -> World) (model: World)
     else
         model
 
-let updateEmenies (time: Time) (world: World): World =
+let updateEnemies (time: Time) (world: World): World =
     let enemies =
         world.Enemies
         |> Map.mapValues (Enemy.updatePosition time)
@@ -81,7 +81,7 @@ let updateEmenies (time: Time) (world: World): World =
         let enemy = { enemy with Weapon = weapon }
         let enemiesBullets =
             match bullet with
-            | Some bullet -> world.EnemiesBullets |> Map.addWithGuid bullet
+            | Some bullet -> world.EnemiesBullets |> Map.addNew bullet
             | None -> world.EnemiesBullets
         
         { world with
@@ -90,7 +90,7 @@ let updateEmenies (time: Time) (world: World): World =
     
     enemies |> Map.fold folder world
 
-let clearEmenies (model: World): World =    
+let clearEnemies (model: World): World =    
     let filterByPosition: Enemy -> bool =
         fun { Position = Position value } -> value.Y < 240.0f + 19.0f
     
@@ -119,7 +119,7 @@ let clearBullets (model: World): World =
         Bullets = model.Bullets |> Map.filterValues filter
         EnemiesBullets = model.EnemiesBullets |> Map.filterValues filter }
          
-let collideEmeniesAndBullets (model: World): World =
+let collideEnemiesAndBullets (model: World): World =
     let bullets = model.Bullets
     let enemies = model.Enemies
     let collided = seq {
@@ -165,11 +165,11 @@ let update (input: Input) (time: Time) (model: World): World =
     |> handleMove input time
     |> handleFire input time
     |> (every 1.0f time spawnEnemy)
-    |> updateEmenies time
+    |> updateEnemies time
     |> updateBullets time
-    |> collideEmeniesAndBullets
+    |> collideEnemiesAndBullets
     |> collidePlayerAndBullets
-    |> clearEmenies
+    |> clearEnemies
     |> clearBullets
 
 let draw (canvas: Canvas) (content: Content) (model: World) =
@@ -211,7 +211,7 @@ let main argv =
     
     use loop =
         game
-        |> GameLoop.makeWithConfig config
-        |> GameLoop.run
+        |> GameState.create config
+        |> GameState.run
 
     0
