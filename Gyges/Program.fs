@@ -186,9 +186,6 @@ let draw (canvas: Canvas) (content: Content) (model: World) =
     
     let (Position(pos)) = model.Player.Position    
     canvas.DrawTexture content.Ship pos
-    
-    canvas.DrawText content.ScoreFont (sprintf "%i" model.Score) (Vector2(230.0f, 10.0f))
-    canvas.DrawText content.ScoreFont (sprintf "%i" model.Player.Health) (Vector2(230.0f, 20.0f))
 
 [<EntryPoint>]
 let main argv =
@@ -198,7 +195,7 @@ let main argv =
           ScreenWidth = 640
           ScreenHeight = 480
           IsFullscreen = false
-          IsFixedTimeStep = false
+          IsFixedTimeStep = true
         }
     
     let game =

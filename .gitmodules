@@ -1,0 +1,6 @@
+[submodule "Fna"]
+	path = Fna
+	url = https://github.com/FNA-XNA/FNA
+[submodule "fnalibs"]
+	path = fnalibs
+	url = https://github.com/butter-cat-games/fnalibs

@@ -20,20 +20,33 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
 
-  <!-- Processed by content pipeline on build into xnb files -->
   <ItemGroup>
-    <None Include="Content.mgcb" />
-    <None Include="Connection.otf" />
-    <None Include="Connection.spritefont" />
-    <None Include="ship.png" />
-    <None Include="bullet.png" />
-    <None Include="enemy.png" />
-    <MonoGameContentReference Include="**\*.mgcb" />
+    <Content Include="Content\Connection.otf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Connection.spritefont" >
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\ship.png" >
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\bullet.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\enemy.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
-
+  
   <ItemGroup>
-    <PackageReference Include="MonoGame.Content.Builder" Version="3.7.0.4" />
-    <PackageReference Include="MonoGame.Framework.DesktopGL.Core" Version="3.7.0.7" />
+    <ProjectReference Include="..\Fna\FNA.Core.csproj" />
+  </ItemGroup>
+  
+	<ItemGroup>
+		<Content Include="..\fnalibs\x64\**\*.*" Condition="'$(OS)' == 'Windows_NT' AND '$(Platform)' != 'x86'">
+			<Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
   </ItemGroup>
 
 </Project>

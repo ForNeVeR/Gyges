@@ -6,13 +6,11 @@ open Microsoft.Xna.Framework.Graphics
 type Content =
     { Ship: Texture2D
       Bullet: Texture2D
-      Enemy: Texture2D
-      ScoreFont: SpriteFont }
+      Enemy: Texture2D }
 
 module Content =    
     let load (contentManager: ContentManager): Content =
         { Ship        = contentManager.Load("ship")
           Bullet      = contentManager.Load("bullet")
-          Enemy       = contentManager.Load("enemy")
-          ScoreFont   = contentManager.Load("score") }
+          Enemy       = contentManager.Load("enemy") }
 

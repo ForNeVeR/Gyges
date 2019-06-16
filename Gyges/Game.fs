@@ -41,8 +41,7 @@ type GameState<'World, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
     let mutable model = Unchecked.defaultof<'World>
     let mutable content = Unchecked.defaultof<'Content>
     let mutable input = Unchecked.defaultof<'Input>
-    
-    let mutable fpsFont: SpriteFont = null
+
     let mutable fps = 0
     let mutable lastFpsUpdate = 0.
     let fpsUpdateInterval = 100.
@@ -62,19 +61,9 @@ type GameState<'World, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
     
     let clearScreen (color: Color) =
         spriteBatch.GraphicsDevice.Clear(color)
-    
-    let updateAndPrintFPS (gameTime : GameTime) (spriteBatch: SpriteBatch) = 
-        if gameTime.TotalGameTime.TotalMilliseconds - lastFpsUpdate > fpsUpdateInterval then
-            fps <- int (1. / gameTime.ElapsedGameTime.TotalSeconds)
-            lastFpsUpdate <- gameTime.TotalGameTime.TotalMilliseconds
-    
-        spriteBatch.DrawString
-            ( spriteFont = fpsFont,
-              text = sprintf "%i" fps,
-              position = Vector2(20.0f, 20.0f),
-              color = Color.White )
 
     override this.Initialize() =
+        this.Content.RootDirectory <- "Content"
         let gd = this.GraphicsDevice
         
         renderTarget <- new RenderTarget2D(gd, config.GameWidth, config.GameHeight)
@@ -96,7 +85,6 @@ type GameState<'World, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
         base.Initialize()
 
     override this.LoadContent() =
-        fpsFont <- this.Content.Load<SpriteFont> "./connection"
         content <- game.LoadContent (this.Content)
         base.LoadContent()
 
@@ -114,15 +102,14 @@ type GameState<'World, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
         gd.Clear Color.Black
         
         gd.SetRenderTarget(renderTarget)
-        spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp)
+        spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null)
         spriteBatch.GraphicsDevice.Clear(Color.DarkBlue)
         game.Draw canvas content model
         spriteBatch.End()
         
         gd.SetRenderTarget(null)
-        spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp)
+        spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null)
         spriteBatch.Draw(renderTarget, onScreenRect, Color.White)
-        updateAndPrintFPS gameTime spriteBatch
         spriteBatch.End()
         base.Draw(gameTime)
 

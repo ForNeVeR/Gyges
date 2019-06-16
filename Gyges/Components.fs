@@ -16,7 +16,7 @@ type Collider = Collider of Rectangle
 
 module Collider =
     let offset (Position position) (Collider rectangle): Collider =
-        offset position rectangle |> Collider
+        offset (position |> Vector2.toPoint) rectangle |> Collider
         
     let checkCollision (Collider lhsRectangle) (Collider rhsRectangle): bool =
         lhsRectangle.Intersects(rhsRectangle)
