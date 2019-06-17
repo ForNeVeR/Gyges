@@ -92,6 +92,7 @@ type GameState<'World, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
         let time =
             { Total = gameTime.TotalGameTime.TotalSeconds |> float32
               Delta = gameTime.ElapsedGameTime.TotalSeconds |> float32 }
+        if gameTime.IsRunningSlowly then printfn "slow %A" gameTime.TotalGameTime
         
         input <- game.HandleInput()
         model <- game.Update input time model

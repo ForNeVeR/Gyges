@@ -4,7 +4,7 @@ open Microsoft.Xna.Framework.Input
 
 type Key = Left | Right | Up | Down | Fire
 
-type Input = { Pressed: Key list }
+type Input = { Pressed: Key ResizeArray }
 
 module Input =
     let keyBindings =
@@ -17,9 +17,9 @@ module Input =
     
     let handle(): Input =
         let keyboard = Keyboard.GetState()
-        let keys = 
-            [ for KeyValue(k, v) in keyBindings do
-                if keyboard.IsKeyDown(k) then yield v ]
-            
+        let keys = ResizeArray()
+        for KeyValue(k, v) in keyBindings do
+            if keyboard.IsKeyDown(k) then keys.Add v
+
         { Pressed = keys }
 

@@ -31,7 +31,7 @@ let handleMove (input: Input) (time: Time) (model: World): World =
         
     let dir =
         input.Pressed
-        |> List.sumBy keyToDir
+        |> Seq.sumBy keyToDir
         |> norm
         
     { model with
@@ -41,7 +41,7 @@ let handleMove (input: Input) (time: Time) (model: World): World =
 
 let handleFire (input: Input) (time: Time) (model: World): World =
     let player = model.Player  
-    if input.Pressed |> List.contains Fire then
+    if input.Pressed |> Seq.contains Fire then
         let bullet, weapon = player.Weapon |> Weapon.fire time
         let bullets =
             match bullet with
@@ -160,7 +160,8 @@ let collidePlayerAndBullets (model: World): World =
 
     collided |> Seq.fold folder model    
        
-let update (input: Input) (time: Time) (model: World): World = 
+let update (input: Input) (time: Time) (model: World): World =
+    if time.Delta > 0.017f then printfn "%f" time.Delta
     model
     |> handleMove input time
     |> handleFire input time
@@ -195,7 +196,7 @@ let main argv =
           ScreenWidth = 640
           ScreenHeight = 480
           IsFullscreen = false
-          IsFixedTimeStep = true
+          IsFixedTimeStep = false
         }
     
     let game =
