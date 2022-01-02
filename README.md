@@ -7,7 +7,7 @@ universe) will be a "Shoot 'em up" space shooter.
 
 ## Build
 
-[.NET Core 2.2 SDK][netcore-sdk] is required to build the project.
+Install [.NET SDK][dotnet] 6.0 or newer for your platform, then run:
 
 ```
 $ dotnet build
@@ -16,7 +16,7 @@ $ dotnet build
 ## Run
 
 ```
-$ dotnet run --project .\Gyges\Gyges.fsproj
+$ dotnet run -c Release --project .\Gyges\Gyges.fsproj
 ```
 
 ## License
@@ -28,7 +28,7 @@ License, Version 1.1][sil-license].
 
 [gyges]: https://www.youtube.com/watch?v=U2L7rcMN-Bw
 [tyrian]: https://en.wikipedia.org/wiki/Tyrian_(video_game)
-[netcore-sdk]: https://www.microsoft.com/net/download/core#/sdk
+[dotnet]: https://dotnet.microsoft.com/download
 
 [build-appveyor]: https://ci.appveyor.com/project/ForNeVeR/gyges/branch/master
 [badge-appveyor]: https://ci.appveyor.com/api/projects/status/tjl8vh406aojq35f/branch/master?svg=true
