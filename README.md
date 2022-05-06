@@ -1,4 +1,4 @@
-# Gyges [![Status Enfer][status-enfer]][andivionian-status-classifier] [![Appveyor Build][badge-appveyor]][build-appveyor]
+# Gyges [![Status Enfer][status-enfer]][andivionian-status-classifier]
 
 Gyges (named after [one of the planets][gyges] in the [Tyrian][tyrian]
 universe) will be a "Shoot 'em up" space shooter.
@@ -7,7 +7,9 @@ universe) will be a "Shoot 'em up" space shooter.
 
 ## Build
 
-Install [.NET SDK][dotnet] 6.0 or newer for your platform, then run:
+For now, only building on Windows is supported.
+
+Install [.NET SDK][dotnet] 6.0 and .NET Core 3.1 runtime (to run MonoGame content builder task) for your platform, then run:
 
 ```
 $ dotnet build
@@ -29,9 +31,6 @@ License, Version 1.1][sil-license].
 [gyges]: https://www.youtube.com/watch?v=U2L7rcMN-Bw
 [tyrian]: https://en.wikipedia.org/wiki/Tyrian_(video_game)
 [dotnet]: https://dotnet.microsoft.com/download
-
-[build-appveyor]: https://ci.appveyor.com/project/ForNeVeR/gyges/branch/master
-[badge-appveyor]: https://ci.appveyor.com/api/projects/status/tjl8vh406aojq35f/branch/master?svg=true
 
 [andivionian-status-classifier]: https://github.com/ForNeVeR/andivionian-status-classifier##status-enfer-
 [status-enfer]: https://img.shields.io/badge/status-enfer-orange.svg

@@ -5,6 +5,19 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Gyges", "Gyges\Gyges.fsproj", "{B82F27B2-84B1-4623-BA5D-7E749946FB5F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{8FC3477C-F8C7-4340-A609-D5E17B5BFB3E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{1F11AF61-EC79-4393-A710-99BE5D0AD8B7}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\main.yml = .github\workflows\main.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8C17E601-DB41-4F03-83AD-D778661E8365}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +43,8 @@ Global
 		{B82F27B2-84B1-4623-BA5D-7E749946FB5F}.Release|x64.Build.0 = Release|Any CPU
 		{B82F27B2-84B1-4623-BA5D-7E749946FB5F}.Release|x86.ActiveCfg = Release|Any CPU
 		{B82F27B2-84B1-4623-BA5D-7E749946FB5F}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1F11AF61-EC79-4393-A710-99BE5D0AD8B7} = {8FC3477C-F8C7-4340-A609-D5E17B5BFB3E}
 	EndGlobalSection
 EndGlobal
