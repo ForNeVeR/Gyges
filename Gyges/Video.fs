@@ -87,7 +87,6 @@ type Video(scaler: Scaler) as this =
             SDL_FreeFormat(mainWindowTextureFormat |> NativePtr.toNativeInt)
             mainWindowTextureFormat <- NativePtr.nullPtr
 
-    // TODO Refactor it!
     let initScaler (scaler: Scaler) =
         assert (mainWindow <> IntPtr.Zero)
         assert (not (NativePtr.isNullPtr mainWindowTextureFormat))
@@ -102,13 +101,17 @@ type Video(scaler: Scaler) as this =
             windowCenterInDisplay(windowGetDisplayIndex())
 
         let textureFormat = mainWindowTextureFormat |> NativePtr.read
-        let func, result =
+        let result =
             match textureFormat.BitsPerPixel with
-            | 32uy -> scaler.Scaler32, true
-            | 16uy -> scaler.Scaler16, true
-            | _ -> Unchecked.defaultof<ScalerFunction>, false
+            | 32uy ->
+                scalerFunction <- scaler.Scaler32
+                true
+            | 16uy ->
+                scalerFunction <- scaler.Scaler16
+                true
+            | _ ->
+                false
 
-        scalerFunction <- func
         result
 
     do
