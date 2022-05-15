@@ -1,16 +1,17 @@
 ﻿open Gyges
-open type SDL2.SDL
+open Silk.NET.SDL
 
 [<EntryPoint>]
 let main args =
-    use video = new Video(VideoScale.scalers[3])
+    let api = Sdl.GetApi()
+    use video = new Video(api, VideoScale.scalers[3])
 
     // Event loop
     let mutable quit = false
-    let mutable event = SDL_Event()
+    let mutable event = Event()
     while not quit do
-        while SDL_PollEvent(&event) > 0 do
-            if event.``type`` = SDL_EventType.SDL_QUIT then
+        while api.PollEvent(&event) > 0 do
+            if event.Type = uint32 EventType.Quit then
                 quit <- true
 
     0

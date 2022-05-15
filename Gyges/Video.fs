@@ -4,8 +4,10 @@ namespace Gyges
 #nowarn "9"
 
 open System
+open System.Runtime.CompilerServices
 open FSharp.NativeInterop
-open type SDL2.SDL
+open Silk.NET.SDL
+open Silk.NET.Maths
 
 type ScalingMode =
 | Center
@@ -14,82 +16,77 @@ type ScalingMode =
 | Aspect43
 
 module Video =
-    let clr256 (screen: nativeptr<SDL_Surface>) =
-        SDL_FillRect(screen |> NativePtr.toNativeInt, IntPtr.Zero, 0u) |> ignore
+    let clr256 (api: Sdl) (screen: nativeptr<Surface>) =
+        let nullRef = &Unsafe.NullRef<Rectangle<int>>()
+        api.FillRect(screen, &nullRef, 0u) |> ignore
+        ()
 
-type Video(scaler: Scaler) as this =
+type Video(api: Sdl, scaler: Scaler) as this =
     let mutable fullscreenDisplay: int = -1
     let mutable scaler = scaler
     let mutable scalerFunction = Unchecked.defaultof<ScalerFunction>
     let mutable scalingMode: ScalingMode = Center
-    let mutable vgaScreen: nativeptr<SDL_Surface> = NativePtr.nullPtr
-    let mutable vgaScreenSeg: nativeptr<SDL_Surface> = NativePtr.nullPtr
-    let mutable gameScreen: nativeptr<SDL_Surface> = NativePtr.nullPtr
-    let mutable vgaScreen2: nativeptr<SDL_Surface> = NativePtr.nullPtr
-    let mutable mainWindow: nativeint = IntPtr.Zero
-    let mutable mainWindowRenderer: nativeint = IntPtr.Zero
-    let mutable mainWindowTextureFormat: nativeptr<SDL_PixelFormat> = NativePtr.nullPtr
-    let mutable mainWindowTexture: nativeint = IntPtr.Zero
+    let mutable vgaScreen: nativeptr<Surface> = NativePtr.nullPtr
+    let mutable vgaScreenSeg: nativeptr<Surface> = NativePtr.nullPtr
+    let mutable gameScreen: nativeptr<Surface> = NativePtr.nullPtr
+    let mutable vgaScreen2: nativeptr<Surface> = NativePtr.nullPtr
+    let mutable mainWindow: nativeptr<Window> = NativePtr.nullPtr
+    let mutable mainWindowRenderer: nativeptr<Renderer> = NativePtr.nullPtr
+    let mutable mainWindowTextureFormat: nativeptr<PixelFormat> = NativePtr.nullPtr
+    let mutable mainWindowTexture: nativeptr<Texture> = NativePtr.nullPtr
 
     let windowGetDisplayIndex () =
-        SDL_GetWindowDisplayIndex(mainWindow)
+        api.GetWindowDisplayIndex(mainWindow)
 
-    let windowCenterInDisplay(displayIndex: int) =
+    let windowCenterInDisplay (displayIndex: int) =
         let mutable windowHeight = 0
         let mutable windowWidth = 0
-        SDL_GetWindowSize(mainWindow, &windowWidth, &windowHeight)
+        api.GetWindowSize(mainWindow, &windowWidth, &windowHeight)
 
-        let mutable bounds = SDL_Rect()
-        SDL_GetDisplayBounds(displayIndex, &bounds) |> ignore
+        let mutable bounds = Rectangle()
+        api.GetDisplayBounds(displayIndex, &bounds) |> ignore
 
-        SDL_SetWindowPosition(mainWindow, bounds.x + (bounds.w - windowWidth) / 2, bounds.y + (bounds.h - windowHeight) / 2);
+        api.SetWindowPosition(mainWindow, bounds.Origin.X + (bounds.Size.X - windowWidth) / 2, bounds.Origin.Y + (bounds.Size.Y - windowHeight) / 2);
 
         ()
 
     let initRenderer () =
-        mainWindowRenderer <- SDL_CreateRenderer(mainWindow, -1, SDL_RendererFlags.SDL_RENDERER_ACCELERATED)
-        if mainWindowRenderer = IntPtr.Zero then
-            failwithf $"error: failed to create renderer: {SDL_GetError()}"
+        mainWindowRenderer <- api.CreateRenderer(mainWindow, -1, uint32 RendererFlags.RendererAccelerated)
+        if NativePtr.isNullPtr mainWindowRenderer then
+            failwithf $"error: failed to create renderer: {api.GetErrorS()}"
 
     let deinitRenderer () =
-        if mainWindowRenderer <> IntPtr.Zero then
-            SDL_DestroyRenderer(mainWindowRenderer)
-            mainWindowRenderer <- IntPtr.Zero
+        if NativePtr.isNotNullPtr mainWindowRenderer then
+            api.DestroyRenderer(mainWindowRenderer)
+            mainWindowRenderer <- NativePtr.nullPtr
 
     let initTexture () =
-        assert (mainWindowRenderer <> IntPtr.Zero)
-
-        let bitsPerPixel = 32 // TODO SDL2???
-        let format =
-            if bitsPerPixel = 32 then
-                SDL_PIXELFORMAT_RGB888
-            else
-                SDL_PIXELFORMAT_RGB565
-
-        mainWindowTextureFormat <- SDL_AllocFormat(format) |> NativePtr.ofNativeInt
+        assert (NativePtr.isNotNullPtr mainWindowRenderer)
+        let format = uint32 PixelFormatEnum.PixelformatRgb888
+        mainWindowTextureFormat <- api.AllocFormat(format)
         mainWindowTexture <-
-            SDL_CreateTexture(
+            api.CreateTexture(
                 mainWindowRenderer,
                 format,
-                int SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
+                int TextureAccess.TextureaccessStreaming,
                 scaler.Width,
                 scaler.Height)
 
-        if mainWindowTexture = IntPtr.Zero then
-            failwithf $"error: failed to create scaler texture {scaler.Width}x{scaler.Height}x{SDL_GetPixelFormatName(format)}: {SDL_GetError()}"
+        if (NativePtr.isNullPtr mainWindowTexture) then
+            failwithf $"error: failed to create scaler texture {scaler.Width}x{scaler.Height}x{api.GetPixelFormatNameS(format)}: {api.GetErrorS()}"
 
     let deinitTexture () =
-        if mainWindowTexture <> IntPtr.Zero then
-            SDL_DestroyTexture(mainWindowTexture)
-            mainWindowTexture <- IntPtr.Zero
+        if NativePtr.isNotNullPtr mainWindowTexture then
+            api.DestroyTexture(mainWindowTexture)
+            mainWindowTexture <- NativePtr.nullPtr
 
-        if not (NativePtr.isNullPtr mainWindowTextureFormat) then
-            SDL_FreeFormat(mainWindowTextureFormat |> NativePtr.toNativeInt)
+        if NativePtr.isNotNullPtr mainWindowTextureFormat then
+            api.FreeFormat(mainWindowTextureFormat)
             mainWindowTextureFormat <- NativePtr.nullPtr
 
     let initScaler (scaler: Scaler) =
-        assert (mainWindow <> IntPtr.Zero)
-        assert (not (NativePtr.isNullPtr mainWindowTextureFormat))
+        assert (NativePtr.isNotNullPtr mainWindow)
+        assert (NativePtr.isNotNullPtr mainWindowTextureFormat)
 
         deinitTexture()
         initTexture()
@@ -97,7 +94,7 @@ type Video(scaler: Scaler) as this =
         if fullscreenDisplay = -1 then
             // Changing scalers, when not in fullscreen mode, forces the window
             // to resize to exactly match the scaler's output dimensions.
-            SDL_SetWindowSize(mainWindow, scaler.Width, scaler.Height)
+            api.SetWindowSize(mainWindow, scaler.Width, scaler.Height)
             windowCenterInDisplay(windowGetDisplayIndex())
 
         let textureFormat = mainWindowTextureFormat |> NativePtr.read
@@ -115,70 +112,71 @@ type Video(scaler: Scaler) as this =
         result
 
     do
-        if SDL_WasInit(SDL_INIT_VIDEO) = 0u then
-            if SDL_InitSubSystem(SDL_INIT_VIDEO) = -1 then
-                failwithf $"error: failed to initialize SDL video: {SDL_GetError()}"
+        if api.WasInit(Sdl.InitVideo) = 0u then
+            if api.InitSubSystem(Sdl.InitVideo) = -1 then
+                failwithf $"error: failed to initialize SDL video: {api.GetErrorS()}"
 
         // Create the software surfaces that the game renders to. These are all 320x200x8 regardless
         // of the window size or monitor resolution.
-        vgaScreen <- SDL_CreateRGBSurface(0u, Vga.Width, Vga.Height, 8, 0u, 0u, 0u, 0u) |> NativePtr.ofNativeInt
+        vgaScreen <- api.CreateRGBSurface(0u, Vga.Width, Vga.Height, 8, 0u, 0u, 0u, 0u)
         vgaScreenSeg <- vgaScreen
-        vgaScreen2 <- SDL_CreateRGBSurface(0u, Vga.Width, Vga.Height, 8, 0u, 0u, 0u, 0u) |> NativePtr.ofNativeInt
-        gameScreen <- SDL_CreateRGBSurface(0u, Vga.Width, Vga.Height, 8, 0u, 0u, 0u, 0u) |> NativePtr.ofNativeInt
+        vgaScreen2 <- api.CreateRGBSurface(0u, Vga.Width, Vga.Height, 8, 0u, 0u, 0u, 0u)
+        gameScreen <- api.CreateRGBSurface(0u, Vga.Width, Vga.Height, 8, 0u, 0u, 0u, 0u)
 
         // The game code writes to surface->pixels directly without locking, so make sure that we
         // indeed created software surfaces that support this.
-        assert not (SDL_MUSTLOCK(vgaScreen |> NativePtr.toNativeInt))
-        assert not (SDL_MUSTLOCK(vgaScreen2 |> NativePtr.toNativeInt))
-        assert not (SDL_MUSTLOCK(gameScreen |> NativePtr.toNativeInt))
+        // TODO SDL_MUSTLOCK
+        //assert not (SDL_MUSTLOCK(vgaScreen |> NativePtr.toNativeInt))
+        //assert not (SDL_MUSTLOCK(vgaScreen2 |> NativePtr.toNativeInt))
+        //assert not (SDL_MUSTLOCK(gameScreen |> NativePtr.toNativeInt))
 
-        Video.clr256(vgaScreen)
+        Video.clr256 api vgaScreen
 
         // Create the window with a temporary initial size, hidden until we set up the
         // scaler and find the true window size
         mainWindow <-
-            SDL_CreateWindow(
+            api.CreateWindow(
                 "Gyges",
-                SDL_WINDOWPOS_CENTERED,
-                SDL_WINDOWPOS_CENTERED,
+                Sdl.WindowposCentered,
+                Sdl.WindowposCentered,
                 Vga.Width, Vga.Height,
-                SDL_WindowFlags.SDL_WINDOW_RESIZABLE ||| SDL_WindowFlags.SDL_WINDOW_HIDDEN)
+                (uint32 WindowFlags.WindowResizable) ||| (uint32 WindowFlags.WindowHidden))
 
-        if mainWindow = IntPtr.Zero then
-            failwithf $"error: failed to create window: {SDL_GetError()}"
+        if NativePtr.isNullPtr mainWindow then
+            failwithf $"error: failed to create window: {api.GetErrorS()}"
 
         this.ReinitFullscreen(fullscreenDisplay)
         initRenderer()
         initTexture()
         initScaler(scaler) |> ignore
 
-        SDL_ShowWindow(mainWindow)
+        api.ShowWindow(mainWindow)
 
     interface IDisposable with
         member _.Dispose() =
             deinitRenderer()
             deinitTexture()
-            SDL_DestroyWindow(mainWindow)
+            api.DestroyWindow(mainWindow)
 
-            SDL_FreeSurface(vgaScreenSeg |> NativePtr.toNativeInt)
-            SDL_FreeSurface(vgaScreen2 |> NativePtr.toNativeInt)
-            SDL_FreeSurface(gameScreen |> NativePtr.toNativeInt)
+            api.FreeSurface(vgaScreenSeg)
+            api.FreeSurface(vgaScreen2)
+            api.FreeSurface(gameScreen)
 
-            SDL_QuitSubSystem(SDL_INIT_VIDEO)
+            api.QuitSubSystem(Sdl.InitVideo)
 
     member _.ReinitFullscreen(newDisplay: int) =
         fullscreenDisplay <- newDisplay
 
-        if fullscreenDisplay >= SDL_GetNumVideoDisplays() then
+        if fullscreenDisplay >= api.GetNumVideoDisplays() then
             fullscreenDisplay <- 0
 
-        SDL_SetWindowFullscreen(mainWindow, uint32 SDL_bool.SDL_FALSE) |> ignore
-        SDL_SetWindowSize(mainWindow, scaler.Width, scaler.Height);
+        api.SetWindowFullscreen(mainWindow, uint32 SdlBool.False) |> ignore
+        api.SetWindowSize(mainWindow, scaler.Width, scaler.Height);
 
         if fullscreenDisplay = -1 then
             windowCenterInDisplay(windowGetDisplayIndex())
             ()
         else
             windowCenterInDisplay(windowGetDisplayIndex())
-            if SDL_SetWindowFullscreen(mainWindow, uint32 SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP) <> 0 then
+            if api.SetWindowFullscreen(mainWindow, uint32 WindowFlags.WindowFullscreenDesktop) <> 0 then
                 this.ReinitFullscreen(-1)

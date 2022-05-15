@@ -1,9 +1,9 @@
 // video_scale.c
 namespace Gyges
 
-open type SDL2.SDL
+open Silk.NET.SDL
 
-type ScalerFunction = (*source*) SDL_Surface -> (*destination*) SDL_Surface -> unit
+type ScalerFunction = (*source*) Surface -> (*destination*) Surface -> unit
 
 [<NoComparison; NoEquality>]
 type Scaler = {
@@ -15,10 +15,10 @@ type Scaler = {
 }
 
 module VideoScale =
-    let none16 (source: SDL_Surface) (destination: SDL_Surface) =
+    let none16 (source: Surface) (destination: Surface) =
         failwithf "Not implemented"
 
-    let none32 (source: SDL_Surface) (destination: SDL_Surface) =
+    let none32 (source: Surface) (destination: Surface) =
         failwithf "Not implemented"
 
     let scalers: Scaler array = [|
