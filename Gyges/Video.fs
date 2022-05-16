@@ -101,10 +101,7 @@ type Video(api: Sdl, scaler: Scaler) as this =
         let result =
             match textureFormat.BitsPerPixel with
             | 32uy ->
-                scalerFunction <- scaler.Scaler32
-                true
-            | 16uy ->
-                scalerFunction <- scaler.Scaler16
+                scalerFunction <- scaler.Scaler
                 true
             | _ ->
                 false

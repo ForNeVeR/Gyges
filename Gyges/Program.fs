@@ -4,7 +4,7 @@ open Silk.NET.SDL
 [<EntryPoint>]
 let main args =
     let api = Sdl.GetApi()
-    use video = new Video(api, VideoScale.scalers[3])
+    use video = new Video(api, VideoScale.scalers[0])
 
     // Event loop
     let mutable quit = false

@@ -1,4 +1,4 @@
-namespace Gyges
+namespace FSharp.NativeInterop
 
 #nowarn "9"
 

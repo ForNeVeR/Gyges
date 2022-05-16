@@ -1,29 +1,52 @@
 // video_scale.c
 namespace Gyges
 
-open Silk.NET.SDL
+#nowarn "9"
 
-type ScalerFunction = (*source*) Surface -> (*destination*) Surface -> unit
+open System
+open System.Runtime.CompilerServices
+open FSharp.NativeInterop
+open Silk.NET.SDL
+open Silk.NET.Maths
+
+type ScalerFunction = (*api*) Sdl -> (*rbgPalette*) uint32 array -> (*source*) Surface -> (*destination*) nativeptr<Texture> -> unit
 
 [<NoComparison; NoEquality>]
 type Scaler = {
     Width: int
     Height: int
-    Scaler16: ScalerFunction
-    Scaler32: ScalerFunction
+    Scaler: ScalerFunction
     Name: string
 }
 
 module VideoScale =
-    let none16 (source: Surface) (destination: Surface) =
-        failwithf "Not implemented"
+    let none (api: Sdl) (rbgPalette: uint32 array) (sourceSurface: Surface) (destinationTexture: nativeptr<Texture>) =
+        let mutable dstWidth = 0
+        let mutable dstHeight = 0
+        api.QueryTexture(
+            destinationTexture,
+            NativePtr.nullPtr<uint32>,
+            NativePtr.nullPtr<int>,
+            &dstWidth, &dstHeight) |> ignore
 
-    let none32 (source: Surface) (destination: Surface) =
-        failwithf "Not implemented"
+        let width = sourceSurface.W
+        let height = sourceSurface.H
+        // let scale = dstHeight / height
 
+        let mutable dstPitch = 0
+        let mutable dstPixels = Unchecked.defaultof<voidptr>
+        let nullRef = &Unsafe.NullRef<Rectangle<int>>()
+        api.LockTexture(destinationTexture, &nullRef, &dstPixels, &dstPitch) |> ignore
+
+        let src = Span<uint8>(sourceSurface.Pixels, sourceSurface.W * sourceSurface.H)
+        let dst = Span<uint32>(dstPixels, dstWidth * dstHeight)
+
+        // TODO Scale surface to texture
+        for y = 0 to height - 1 do
+            for x = 0 to width - 1 do
+                dst[y*height + x] <- rbgPalette[int src[y*height + x]]
+
+        api.UnlockTexture(destinationTexture)
     let scalers: Scaler array = [|
-        { Width = Vga.Width; Height = Vga.Height; Scaler16 = none16; Scaler32 = none32; Name = "None" }
-        { Width = 2 * Vga.Width; Height = 2 * Vga.Height; Scaler16 = none16; Scaler32 = none32; Name = "2x" }
-        { Width = 3 * Vga.Width; Height = 3 * Vga.Height; Scaler16 = none16; Scaler32 = none32; Name = "3x" }
-        { Width = 4 * Vga.Width; Height = 4 * Vga.Height; Scaler16 = none16; Scaler32 = none32; Name = "4x" }
+        { Width = Vga.Width; Height = Vga.Height; Scaler = none; Name = "None" }
     |]
