@@ -1,144 +1,113 @@
 namespace Gyges
 
-open Microsoft.Xna.Framework
-open Microsoft.Xna.Framework.Content
-open Microsoft.Xna.Framework.Graphics;
+open System.Numerics
+open Raylib_CsLo
 
-type Time =
-    { Total: float32
-      Delta: float32 }
+type Time = { 
+    Total: float
+    Delta: float32 
+}
     
-type Config =
-    { GameWidth: int
-      GameHeight: int
-      ScreenWidth: int
-      ScreenHeight: int
-      IsFullscreen: bool
-      IsFixedTimeStep: bool
-    }
+type Config = { 
+    GameWidth: int
+    GameHeight: int
+    ScreenWidth: int
+    ScreenHeight: int
+    ScreenTitle: string
+    TargetFps: int
+}
 
-type Canvas =
-    { DrawTexture: Texture2D -> Vector2 -> unit
-      DrawText: SpriteFont -> string -> Vector2 -> unit
-      Clear: Color -> unit }
+type Canvas = { 
+    DrawTexture: Texture -> Vector2 -> unit
+    DrawRectangle: float32 -> float32 -> float32 -> float32 -> Color -> unit
+    DrawText: Font -> string -> Vector2 -> float32 -> float32 -> unit
+    Clear: Color -> unit 
+}
     
-type Game<'World, 'Content, 'Input> =
-    { LoadContent: ContentManager -> 'Content
-      Init: unit -> 'World
-      HandleInput: unit -> 'Input
-      Update: 'Input -> Time -> 'World -> 'World
-      Draw: Canvas -> 'Content -> 'World -> unit
-    }
+type Game<'World, 'Content, 'Input> = { 
+    LoadContent: unit -> 'Content
+    Init: unit -> 'World
+    HandleInput: unit -> 'Input
+    Update: 'Input -> Time -> 'World -> 'World
+    Draw: Canvas -> 'Content -> 'World -> unit
+}
     
 type GameState<'World, 'Content, 'Input>(config: Config, game: Game<_, _, _>) =
-    inherit Game()
-
-    let mutable renderTarget: RenderTarget2D = null
+    let mutable renderTarget: RenderTexture = Unchecked.defaultof<RenderTexture>
+    let mutable gameRect: Rectangle = Unchecked.defaultof<Rectangle>
     let mutable onScreenRect: Rectangle = Unchecked.defaultof<Rectangle>
-    let mutable spriteBatch: SpriteBatch = null
     let mutable canvas: Canvas = Unchecked.defaultof<Canvas>
     
     let mutable model = Unchecked.defaultof<'World>
     let mutable content = Unchecked.defaultof<'Content>
     let mutable input = Unchecked.defaultof<'Input>
-    
-    let mutable fpsFont: SpriteFont = null
-    let mutable fps = 0
-    let mutable lastFpsUpdate = 0.
-    let fpsUpdateInterval = 100.
 
-    let drawTexture (texture: Texture2D) (pos: Vector2) =
-        let width, height =
-            texture.Width |> float32, texture.Height |> float32
-            
-        spriteBatch.Draw(texture, pos - Vector2(width, height)/2.0f, Color.White)
-        
-    let drawText (font: SpriteFont) (text: string) (pos: Vector2) =
-        spriteBatch.DrawString
-            ( spriteFont = font,
-              text = text,
-              position = pos,
-              color = Color.White )
+    let drawTexture (texture: Texture) (pos: Vector2) =
+        Raylib.DrawTexture(texture, int (pos.X - float32 (texture.width/2)), int (pos.Y - float32 (texture.height/2)), Raylib.WHITE)
+
+    let drawRectangle (x: float32) (y: float32) (width: float32) (height: float32) (color: Color) =
+        Raylib.DrawRectangleLines(int x, int y, int width, int height, color)    
+
+    let drawText (font: Font) (text: string) (pos: Vector2) (fontSize: float32) (spacing: float32) =
+        Raylib.SetTextureFilter(font.texture, TextureFilter.TEXTURE_FILTER_BILINEAR)
+        Raylib.DrawTextEx(font, text, pos, fontSize, spacing, Raylib.WHITE)
     
     let clearScreen (color: Color) =
-        spriteBatch.GraphicsDevice.Clear(color)
-    
-    let updateAndPrintFPS (gameTime : GameTime) (spriteBatch: SpriteBatch) = 
-        if gameTime.TotalGameTime.TotalMilliseconds - lastFpsUpdate > fpsUpdateInterval then
-            fps <- int (1. / gameTime.ElapsedGameTime.TotalSeconds)
-            lastFpsUpdate <- gameTime.TotalGameTime.TotalMilliseconds
-    
-        spriteBatch.DrawString
-            ( spriteFont = fpsFont,
-              text = sprintf "%i" fps,
-              position = Vector2(20.0f, 20.0f),
-              color = Color.White )
+        Raylib.ClearBackground(color)
 
-    override this.Initialize() =
-        let gd = this.GraphicsDevice
-        
-        renderTarget <- new RenderTarget2D(gd, config.GameWidth, config.GameHeight)
-        let screenWidth = gd.PresentationParameters.BackBufferWidth;
-        let screenHeight = gd.PresentationParameters.BackBufferHeight;
+    member _.Initialize() =
+        renderTarget <- Raylib.LoadRenderTexture(config.GameWidth, config.GameHeight)
+
+        let screenWidth = config.ScreenWidth;
+        let screenHeight = config.ScreenHeight;
         let scale = min (screenWidth/config.GameWidth) (screenHeight/config.GameHeight)
         let width = scale * config.GameWidth
         let height = scale * config.GameHeight
-        onScreenRect <- Rectangle(screenWidth/2 - width/2, screenHeight/2 - height/2,
-                                  width, height)
-        
-        spriteBatch <- new SpriteBatch(this.GraphicsDevice)
-        canvas <-
-            { DrawTexture = drawTexture
-              DrawText = drawText
-              Clear = clearScreen }
-                
+        onScreenRect <- Rectangle(float32 (screenWidth/2 - width/2), 
+                                  float32 (screenHeight/2 - height/2),
+                                  float32 width, float32 height)
+        gameRect <- Rectangle(0.0f, 0.0f, float32 config.GameWidth, -float32 config.GameHeight)
+        canvas <- { 
+            DrawTexture = drawTexture
+            DrawRectangle = drawRectangle
+            DrawText = drawText
+            Clear = clearScreen 
+        }
         model <- game.Init()
-        base.Initialize()
 
-    override this.LoadContent() =
-        fpsFont <- this.Content.Load<SpriteFont> "./connection"
-        content <- game.LoadContent (this.Content)
-        base.LoadContent()
+    member _.LoadContent() =
+        content <- game.LoadContent()
 
-    override __.Update(gameTime) =
-        let time =
-            { Total = gameTime.TotalGameTime.TotalSeconds |> float32
-              Delta = gameTime.ElapsedGameTime.TotalSeconds |> float32 }
-        
+    member __.Update(time: Time) =
         input <- game.HandleInput()
         model <- game.Update input time model
-        base.Update(gameTime)
 
-    override this.Draw(gameTime) =
-        let gd = this.GraphicsDevice
-        gd.Clear Color.Black
-        
-        gd.SetRenderTarget(renderTarget)
-        spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp)
-        spriteBatch.GraphicsDevice.Clear(Color.DarkBlue)
+    member _.Draw() =
+        Raylib.BeginTextureMode(renderTarget)
         game.Draw canvas content model
-        spriteBatch.End()
+        Raylib.EndTextureMode()
         
-        gd.SetRenderTarget(null)
-        spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp)
-        spriteBatch.Draw(renderTarget, onScreenRect, Color.White)
-        updateAndPrintFPS gameTime spriteBatch
-        spriteBatch.End()
-        base.Draw(gameTime)
+        Raylib.BeginDrawing()
+        Raylib.DrawTexturePro(renderTarget.texture, gameRect, onScreenRect, Vector2.Zero, 0.0f, Raylib.WHITE)
+        Raylib.DrawFPS(10, 10)
+        Raylib.EndDrawing()
 
 module GameState =
-    let create (config: Config) (game: Game<'World, 'Content, 'Input>) =
+    let run (config: Config) (game: Game<'World, 'Content, 'Input>) =
+        Raylib.InitWindow(config.ScreenWidth, config.ScreenHeight, config.ScreenTitle);
+        Raylib.SetTargetFPS(config.TargetFps)
+
         let loop = new GameState<'World, 'Content, 'Input>(config, game)
-        loop.IsFixedTimeStep <- config.IsFixedTimeStep
-        
-        let graphics = new GraphicsDeviceManager(loop)
-        graphics.IsFullScreen <- config.IsFullscreen
-        graphics.SynchronizeWithVerticalRetrace <- false
-        graphics.PreferredBackBufferWidth <- config.ScreenWidth
-        graphics.PreferredBackBufferHeight <- config.ScreenHeight
-        graphics.ApplyChanges()
-        
-        loop
-        
-    let run (loop: GameState<'Model, 'Content, 'Input>) =
-        loop.Run(); loop
+        loop.Initialize()
+        loop.LoadContent()
+
+        while not (Raylib.WindowShouldClose()) do
+            loop.Draw()
+
+            let time = { 
+                Total = Raylib.GetTime()
+                Delta = Raylib.GetFrameTime() 
+            }
+            loop.Update(time)
+
+        Raylib.CloseWindow();

@@ -1,10 +1,10 @@
 ﻿open Gyges
 open Gyges.Utils
-open Gyges.Math
 open Gyges.Components
 
 open System
-open Microsoft.Xna.Framework
+open System.Numerics
+open Raylib_CsLo
 
 type World =
     { Player: Player
@@ -30,9 +30,10 @@ let handleMove (input: Input) (time: Time) (model: World): World =
         | _ -> Vector2.Zero
         
     let dir =
-        input.Pressed
-        |> List.sumBy keyToDir
-        |> norm
+        let vec = input.Down |> List.sumBy keyToDir
+        if RayMath.Vector2Length(vec) > 0.0f
+        then RayMath.Vector2Normalize(vec)
+        else vec
         
     { model with
         Player = model.Player
@@ -41,7 +42,7 @@ let handleMove (input: Input) (time: Time) (model: World): World =
 
 let handleFire (input: Input) (time: Time) (model: World): World =
     let player = model.Player  
-    if input.Pressed |> List.contains Fire then
+    if input.Down |> List.contains Fire then
         let bullet, weapon = player.Weapon |> Weapon.fire time
         let bullets =
             match bullet with
@@ -56,16 +57,16 @@ let handleFire (input: Input) (time: Time) (model: World): World =
         model
 
 let spawnEnemy (model: World): World =
-    let rnd = System.Random()
+    let rnd = Random()
     let x = rnd.Next(19, 237) |> float32
     let enemy = { Enemy.create() with Position = Vector2(x, -29.0f) |> Position }
     
     { model with Enemies = model.Enemies |> Map.addNew enemy }
 
-let every (period: float32) (time: Time) (action: World -> World) (model: World): World =
+let every (period: float) (time: Time) (action: World -> World) (model: World): World =
     let t = time.Total
     let dt = time.Delta
-    if floor (t/period) <> floor ((t + dt)/period) then
+    if floor (t/ float period) <> floor ((t + float dt)/period) then
         action model
     else
         model
@@ -164,7 +165,7 @@ let update (input: Input) (time: Time) (model: World): World =
     model
     |> handleMove input time
     |> handleFire input time
-    |> (every 1.0f time spawnEnemy)
+    |> (every 1.0 time spawnEnemy)
     |> updateEnemies time
     |> updateBullets time
     |> collideEnemiesAndBullets
@@ -173,45 +174,47 @@ let update (input: Input) (time: Time) (model: World): World =
     |> clearBullets
 
 let draw (canvas: Canvas) (content: Content) (model: World) =
-    canvas.Clear(Color.DarkBlue)
+    canvas.Clear(Raylib.DARKBLUE)
     
-    for KeyValue(_, { Position = Position value }) in model.Bullets do
-        canvas.DrawTexture content.Bullet value
+    for KeyValue(_, { Position = Position pos; Collider = Collider rect }) in model.Bullets do
+        canvas.DrawTexture content.Bullet pos
+        canvas.DrawRectangle (pos.X - rect.width/2.0f) (pos.Y - rect.height/2.0f) rect.width rect.height Raylib.RED
     
-    for KeyValue(_, { Position = Position value }) in model.EnemiesBullets do
-        canvas.DrawTexture content.Bullet value
+    for KeyValue(_, { Position = Position pos; Collider = Collider rect }) in model.EnemiesBullets do
+        canvas.DrawTexture content.Bullet pos
+        canvas.DrawRectangle (pos.X - rect.width/2.0f) (pos.Y - rect.height/2.0f) rect.width rect.height Raylib.RED
         
-    for KeyValue(_, { Position = Position value }) in model.Enemies do
-        canvas.DrawTexture content.Enemy value
+    for KeyValue(_, { Position = Position pos; Collider = Collider rect }) in model.Enemies do
+        canvas.DrawTexture content.Enemy pos
+        canvas.DrawRectangle (pos.X - rect.width/2.0f) (pos.Y - rect.height/2.0f) rect.width rect.height Raylib.RED
     
-    let (Position(pos)) = model.Player.Position    
+    let (Position pos) = model.Player.Position
+    let (Collider rect) = model.Player.Collider   
     canvas.DrawTexture content.Ship pos
+    canvas.DrawRectangle (pos.X - rect.width/2.0f) (pos.Y - rect.height/2.0f) rect.width rect.height Raylib.RED
     
-    canvas.DrawText content.ScoreFont (sprintf "%i" model.Score) (Vector2(230.0f, 10.0f))
-    canvas.DrawText content.ScoreFont (sprintf "%i" model.Player.Health) (Vector2(230.0f, 20.0f))
+    canvas.DrawText content.ScoreFont $"{model.Score}" (Vector2(230.0f, 10.0f)) (float32 content.ScoreFont.baseSize) 2.0f
+    canvas.DrawText content.ScoreFont $"{model.Player.Health}" (Vector2(230.0f, 50.0f)) (float32 content.ScoreFont.baseSize) 2.0f
 
 [<EntryPoint>]
 let main argv =
-    let config =
-        { GameWidth = 320
-          GameHeight = 240
-          ScreenWidth = 640
-          ScreenHeight = 480
-          IsFullscreen = false
-          IsFixedTimeStep = false
-        }
+    let config = { 
+        ScreenTitle = "Gyges"
+        GameWidth = 320
+        GameHeight = 240
+        ScreenWidth = 640
+        ScreenHeight = 480
+        TargetFps = 60
+    }
     
-    let game =
-        { LoadContent = Content.load
-          Init = init
-          HandleInput = Input.handle
-          Update = update
-          Draw = draw
-        }
+    let game = { 
+        LoadContent = Content.load
+        Init = init
+        HandleInput = Input.handle
+        Update = update
+        Draw = draw
+    }
     
-    use loop =
-        game
-        |> GameState.create config
-        |> GameState.run
+    GameState.run config game
 
     0

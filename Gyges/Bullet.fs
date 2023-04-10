@@ -1,7 +1,8 @@
 namespace Gyges
 
 open Components
-open Microsoft.Xna.Framework
+
+open Raylib_CsLo
 
 type Bullet =
     { Position: Position
@@ -15,7 +16,7 @@ module Bullet =
         { Position = position
           Engine = { Speed = 200.0f }
           Movement = movement
-          Collider = Rectangle(0, 0, 15, 11) |> Collider
+          Collider = Rectangle(0.0f, 0.0f, 15.0f, 11.0f) |> Collider
           Health = 1 }
         
     let updatePosition (time: Time) (bullet: Bullet): Bullet =

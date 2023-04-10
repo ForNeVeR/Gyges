@@ -1,14 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
-
   <ItemGroup>
-    <Compile Include="Math.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="Game.fs" />
     <Compile Include="Content.fs" />
@@ -21,24 +18,7 @@
     <Compile Include="Enemy.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-
-  <!-- Processed by content pipeline on build into xnb files -->
   <ItemGroup>
-    <None Include="Content.mgcb" />
-    <None Include="Connection.otf" />
-    <None Include="Connection.spritefont" />
-    <None Include="ship.png" />
-    <None Include="bullet.png" />
-    <None Include="enemy.png" />
-    <MonoGameContentReference Include="**\*.mgcb" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <TrimmerRootAssembly Include="MonoGame.Framework" Visible="false" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.0.1641" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.0.1641" />
+    <PackageReference Include="Raylib-CsLo" Version="4.2.0.9" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 namespace Gyges
 
-open Microsoft.Xna.Framework
+open System.Numerics
+open Raylib_CsLo
 open Components
 
 type Player =
@@ -18,8 +19,8 @@ module Player =
         let position = Vector2(50.0f, 50.0f) |> Position
         
         let recharger: WeaponRecharger =
-            { FireRate = 7.0f
-              LastFireTime = 0.0f }
+            { FireRate = 7.0
+              LastFireTime = 0.0 }
             
         let weapon: Weapon =
             { Position = position + weaponOffset
@@ -33,7 +34,7 @@ module Player =
           Velocity = Vector2.Zero |> Velocity
           Engine = engine
           Weapon = weapon
-          Collider = Rectangle(0, 0, 21, 27) |> Collider
+          Collider = Rectangle(0.0f, 0.0f, 21.0f, 27.0f) |> Collider
           Health = 5 }
     
     let updatePosition (time: Time) (player: Player): Player =

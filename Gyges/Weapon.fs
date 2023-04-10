@@ -1,10 +1,10 @@
 namespace Gyges
 
-open Gyges.Components
+open Components
 
 type WeaponRecharger =
-    { FireRate: float32
-      LastFireTime: float32  
+    { FireRate: float
+      LastFireTime: float  
     }
 
 type WeaponPattern = Time -> Position -> Bullet option
@@ -28,7 +28,7 @@ module Weapon =
         
     let fire (time: Time) (weapon: Weapon): Bullet option * Weapon =
         let isFireAllowed = 
-            time.Total - weapon.Recharger.LastFireTime > (1.0f/weapon.Recharger.FireRate)
+            time.Total - weapon.Recharger.LastFireTime > (1.0/weapon.Recharger.FireRate)
             
         if isFireAllowed then
             let bullet = weapon.Pattern time weapon.Position
